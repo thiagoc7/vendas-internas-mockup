@@ -154,8 +154,8 @@ document.addEventListener("click", (e) => {
       render(); return toast(`${l.length} atrasados levados pra ${rotData(AMANHA())} · dia fechado`); }
     case "fun-vista": S.funVista = v; S.funCel = ""; history.replaceState(null, "", v === "fonte" ? "#/vendas/leads?vista=funil&por=fonte" : "#/vendas/leads?vista=funil"); S.ultimaRota = "#/vendas/leads"; return render();
     case "fun-foco": S.funVista = "etapa"; S.funCel = ""; S.funFech = Object.fromEntries(ETAPAS_FUNIL.map(([k]) => [k, k !== v])); render(); return document.getElementById("sec-" + v)?.scrollIntoView({ block: "start" });
-    case "lead-vista": S.leadVista = v; S.funCel = ""; S.exp.arq = false; S.caixaSel = null; S.caixaIdx = 0; history.replaceState(null, "", v === "caixa" ? "#/vendas/leads" : `#/vendas/leads?vista=${v}`); S.ultimaRota = "#/vendas/leads"; return render();
-    case "cli-vista": S.cliVista = v; S.exp.cli = false; history.replaceState(null, "", v === "todos" ? "#/vendas/clientes" : `#/vendas/clientes?vista=${v}`); S.ultimaRota = "#/vendas/clientes"; return render();
+    case "lead-vista": S.leadVista = v; S.funCel = ""; S.exp.arq = false; S.caixaSel = null; S.caixaIdx = 0; history.replaceState(null, "", v === "caixa" ? "#/vendas/leads" : `#/vendas/leads?vista=${v}`); S.ultimaRota = "#/vendas/leads"; render(); return window.scrollTo(0, 0);
+    case "cli-vista": S.cliVista = v; S.exp.cli = false; history.replaceState(null, "", v === "todos" ? "#/vendas/clientes" : `#/vendas/clientes?vista=${v}`); S.ultimaRota = "#/vendas/clientes"; render(); return window.scrollTo(0, 0);
     case "fontes-sug": return abrirModal({ tipo: "fontes" });
     case "fun-cel": S.funCel = v; return render();
     case "fun-fech": S.funFech[v] = !S.funFech[v]; return render();
