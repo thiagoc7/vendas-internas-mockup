@@ -1,66 +1,66 @@
-// ── Render / rotas / eventos ────────────────────────────────────────────────
+// ── Render / rotas / eventos (v5) ───────────────────────────────────────────
 function reiniciar() {
   const como = S?.como === "sup" ? "sup" : "fer";
-  S = { como, contas: montarContas(), conv: clone(CONVERSAS), camps: clone(CAMPANHAS), modal: null, menu: false, tela: "vendas", vAba: "resumo", id: null, sel: "", exp: {}, drop: null, relogio: 0, seqConv: 100,
-    agAba: "hoje", agFiltro: "", feitos: [{ id: 100 + FEITO_INICIAL, h: "08:30", txt: "ligação · não atendeu · próximo: amanhã 10:00" }], deItem: null,
-    convVista: "minhas", convQ: "", buscaQ: "", aba: "atividade", semana: 0, agSel: null, seq: 500, entrouComo: false, rascunho: {}, erpAberto: true,
-    sugFiltro: "", sugSel: [], gaveta: false, resDia: HOJE, resSel: null, flash: null, proxFoco: false, proxFechado: false,
-    funVista: "etapa", funFonte: "", funCamp: "", funCel: "", funFech: { novo: true }, caixaSel: null, caixaIdx: 0, editPrev: false, leadVista: "caixa", cliVista: "todos", cliQ: "", leadFonte: "", leadCamp: "", leadCid: "", leadSemCls: false,
-    imp: null, fonteAtraso: true, checando: null,
-    importacoes: [{ id: 1, d: "2026-10-05", h: "", fonte: "lista", camp: "Lista Carapicuíba", origem: "planilha (XLSX)", total: 44, aceitos: 40, ids: [], desfeita: false },
-      { id: 2, d: "2026-09-01", h: "", fonte: "whatsapp_numero_novo", camp: "WhatsApp (nº novo)", origem: "API (Central V3)", total: 9, aceitos: 9, ids: [], desfeita: false }] };
-  S.imp = impVazio();
+  S = { como, prazos: { ...PRAZO0 }, camps: clone(CAMPANHAS), conv: clone(CONVERSAS), modal: null, menu: false, tela: "vendas", vAba: "hoje", id: null, sel: "", exp: {}, drop: null, relogio: 0, seqConv: 100, seq: 500, seqProp: 1441,
+    dia: HOJE, atrAberto: false, pAba: "novos", pFonte: "", pCamp: "", cAba: "todos", buscaQ: "", convVista: "minhas", convQ: "", aba: "atividade", entrouComo: false, rascunho: {}, erpAberto: true,
+    flash: null, proxFoco: false, proxFechado: false, deItem: null, imp: null,
+    feitos: [{ id: 100 + FEITO_INICIAL, h: "08:30", txt: "ligação · não atendeu · próximo amanhã 10:00" }, { id: 6, h: "09:15", txt: "ligação · conversou · próximo ter 03/11" }],
+    importacoes: [{ id: 1, d: "2026-10-19", h: "", fonte: "lista", camp: "Lista Carapicuíba (lote 2)", origem: "planilha (XLSX)", total: 26, aceitos: 23, ids: [], desfeita: false },
+      { id: 2, d: "2026-10-05", h: "", fonte: "lista", camp: "Lista Carapicuíba", origem: "planilha (XLSX)", total: 21, aceitos: 18, ids: [], desfeita: false }] };
+  S.contas = montarV5(); S.imp = impVazio();
   sincronizarMockbar(); rotear();
 }
 function tela() {
   switch (S.tela) {
     case "conversas": return telaConversas();
     case "conversa": return telaConversa(S.id);
-    case "cliente": return telaCliente(S.id);
+    case "ficha": return telaFicha(S.id);
     default: return telaVendas();
   }
 }
-const MODAIS = { reg: modalRegistrar, agenda: modalAgendar, novo: modalNovo, perder: modalPerder, gescor: modalGescor, vincular: modalVincular, pessoa: modalPessoa, negocio: modalNegocio, descartar: modalDescartar, fontes: modalFontes };
+const MODAIS = { reg: modalRegistrar, agenda: modalAgendar, novo: modalNovo, vincular: modalVincular, pessoa: modalPessoa };
 function render() {
   const ativo = document.activeElement, idAtivo = ativo?.id, pos = ativo?.selectionStart;
-  const modalScroll = document.querySelector("#modal-raiz .overflow-y-auto")?.scrollTop, gavScroll = document.querySelector("[aria-label='Montar agenda'] .overflow-y-auto")?.scrollTop;
+  const modalScroll = document.querySelector("#modal-raiz .overflow-y-auto")?.scrollTop;
   const tl = document.getElementById("timeline"), tlNoFim = !tl || tl.scrollHeight - tl.scrollTop - tl.clientHeight < 40;
   document.documentElement.style.setProperty("--barra", document.querySelector(".mockbar").offsetHeight + "px");
   const corpo = S.tela === "conversa" ? `<main class="flex flex-col">${tela()}</main>` : `<main><div class="mx-auto max-w-screen-2xl p-4 md:p-6">${tela()}</div></main>`;
-  document.getElementById("app").innerHTML = sidebar() + `<div class="relative flex min-h-screen flex-col lg:ml-[290px]">${header()}${corpo}</div>` + gaveta();
+  document.getElementById("app").innerHTML = sidebar() + `<div class="relative flex min-h-screen flex-col lg:ml-[290px]">${header()}${corpo}</div>`;
   const m = S.modal;
   document.getElementById("modal-raiz").innerHTML = m ? MODAIS[m.tipo](m) : "";
-  document.body.style.overflow = m || S.gaveta ? "hidden" : "";
+  document.body.style.overflow = m ? "hidden" : "";
   if (modalScroll && m && !S.modalTopo) { const el = document.querySelector("#modal-raiz .overflow-y-auto"); if (el) el.scrollTop = modalScroll; }
-  if (gavScroll) { const el = document.querySelector("[aria-label='Montar agenda'] .overflow-y-auto"); if (el) el.scrollTop = gavScroll; }
   S.modalTopo = false;
   const tl2 = document.getElementById("timeline"); if (tl2 && (tlNoFim || S.rolarFim)) tl2.scrollTop = tl2.scrollHeight; S.rolarFim = false;
   if (idAtivo) { const el = document.getElementById(idAtivo); if (el && el !== document.body) { el.focus(); try { if (pos != null) el.setSelectionRange(pos, pos); } catch (_) {} } }
 }
+// rotas v5 + redirects das antigas (v4/v4.1)
+function redirect(h, q, qs) {
+  const LEADS = { caixa: "novos", funil: "contato", ganhos: null, arquivo: "descartados" }, CLI = { hora: "recorrentes", negociacao: "todos", atraso: "atraso", comodato: "comodato", inativos: "recorrentes" };
+  if (!h[0] || h[0] === "painel" || h[0] === "agenda") return "#/vendas";
+  if (h[0] === "vendas" && h[1] === "agenda") return "#/vendas";
+  if (h[0] === "vendas" && h[1] === "funil") return "#/vendas/prospects?aba=contato";
+  if (h[0] === "vendas" && h[1] === "leads") { if (h[2] === "importar") return "#/vendas/prospects/importar"; const v = q.get("vista") || ({ sem: "caixa", perdidos: "arquivo" }[q.get("f")] || q.get("f")) || "caixa"; return v === "ganhos" ? "#/vendas/clientes?aba=novos" : `#/vendas/prospects?aba=${LEADS[v] || "novos"}`; }
+  if (h[0] === "vendas" && h[1] === "clientes" && q.get("vista")) return `#/vendas/clientes?aba=${CLI[q.get("vista")] || "todos"}`;
+  if (h[0] === "clientes" && h[1]) return `#/fichas/${h[1]}`;
+  if (h[0] === "clientes") return q.get("vista") === "prospect" ? "#/vendas/prospects" : "#/vendas/clientes";
+  return null;
+}
 function rotear() {
   let [caminho, qs] = location.hash.replace(/^#\/?/, "").split("?"); const q = new URLSearchParams(qs || "");
-  const h = caminho.split("/").filter(Boolean);
-  // redirects do v3: #/painel → Resumo (aba=semana → Agenda › Semana) · #/agenda → Agenda · #/clientes → Funil (vista=hora → Hora de chamar, vista=prospect → Leads)
-  const troca = (x) => { history.replaceState(null, "", x); return rotear(); };
-  if (!h[0]) return troca("#/vendas");
-  if (h[0] === "painel") return troca(q.get("aba") === "semana" ? "#/vendas/agenda?aba=semana" : "#/vendas");
-  if (h[0] === "agenda") return troca("#/vendas/agenda" + (qs ? "?" + qs : ""));
-  if (h[0] === "clientes" && !h[1]) { const v = q.get("vista"); return troca(v === "hora" ? "#/vendas/clientes?vista=hora" : v === "prospect" ? "#/vendas/leads?vista=funil" : q.get("porcampanha") ? "#/vendas/leads?vista=funil&por=fonte" : q.get("etapa") === "sem" ? "#/vendas/leads?vista=caixa" : "#/vendas/clientes"); }
-  // v4.1: a aba Funil virou a vista Funil de Leads; Hora de chamar foi pra Clientes
-  if (h[0] === "vendas" && h[1] === "funil") { const v = q.get("vista"); return troca(v === "hora" ? "#/vendas/clientes?vista=hora" : v === "arquivo" ? "#/vendas/leads?vista=arquivo" : v === "fonte" ? "#/vendas/leads?vista=funil&por=fonte" : "#/vendas/leads?vista=funil"); }
-  if (h[0] === "vendas" && h[1] === "leads" && !h[2] && q.get("f")) { const f = q.get("f"), mapa = { sem: "caixa", caixa: "caixa", funil: "funil", ganhos: "ganhos", perdidos: "arquivo" }; q.delete("f"); q.set("vista", mapa[f] || "caixa"); return troca("#/vendas/leads?" + q.toString()); }
+  const h = caminho.split("/").filter(Boolean), novo = redirect(h, q, qs);
+  if (novo) { history.replaceState(null, "", novo); return rotear(); }
   const antes = location.hash.split("?")[0];
   S.id = h[1] && h[0] !== "vendas" ? Number(h[1]) : null;
-  S.tela = h[0] === "conversas" && h[1] ? "conversa" : h[0] === "conversas" ? "conversas" : h[0] === "clientes" ? "cliente" : h[0] === "equipe" ? "equipe" : "vendas";
-  if (S.tela === "equipe") S.vAba = "equipe";
+  S.tela = h[0] === "conversas" && h[1] ? "conversa" : h[0] === "conversas" ? "conversas" : h[0] === "fichas" ? "ficha" : "vendas";
   if (S.tela === "vendas") {
-    S.vAba = h[1] === "agenda" ? "agenda" : h[1] === "clientes" ? "clientes" : h[1] === "leads" ? (h[2] === "importar" ? "importar" : "leads") : "resumo";
-    if (S.vAba === "agenda") { S.agAba = q.get("aba") === "semana" ? "semana" : "hoje"; S.agFiltro = q.get("f") || ""; }
-    if (S.vAba === "leads") { S.leadVista = q.get("vista") || "caixa"; S.funVista = q.get("por") === "fonte" ? "fonte" : "etapa"; S.funCel = ""; S.exp.arq = false; if (qs) { S.leadCamp = q.get("campanha") || ""; S.leadFonte = q.get("fonte") || ""; } }
-    if (S.vAba === "clientes") { S.cliVista = q.get("vista") || "todos"; S.exp.cli = false; }
+    S.vAba = h[0] === "equipe" ? "equipe" : h[0] === "prazos" ? "prazos" : h[1] === "prospects" ? (h[2] === "importar" ? "importar" : "prospects") : h[1] === "clientes" ? "clientes" : "hoje";
+    if (S.vAba === "prospects") { S.pAba = q.get("aba") || "novos"; S.exp.pro = false; }
+    if (S.vAba === "clientes") { S.cAba = q.get("aba") || "todos"; S.exp.cli = false; }
+    if (S.vAba === "hoje") S.dia = q.get("dia") === "amanha" ? AMANHA() : HOJE;
   }
-  if (antes !== S.ultimaRota && Date.now() - (toast.em || 0) > 150) document.getElementById("toast").classList.add("hidden"); // toast de outro fluxo não vaza pra rota nova
-  if (antes !== S.ultimaRota) { S.caixaSel = null; S.caixaIdx = 0; S.editPrev = false; S.agSel = null; S.resSel = null; S.proxFoco = false; S.gaveta = false; if (!S.manterFlash) S.flash = null; if (S.tela === "cliente") S.aba = "atividade"; }
+  if (antes !== S.ultimaRota && Date.now() - (toast.em || 0) > 150) document.getElementById("toast").classList.add("hidden");
+  if (antes !== S.ultimaRota) { S.proxFoco = false; if (!S.manterFlash) S.flash = null; if (S.tela === "ficha") S.aba = "atividade"; }
   S.ultimaRota = antes; S.manterFlash = false;
   S.conv.forEach((v) => { if (!(S.tela === "conversa" && v.id === S.id)) v.msgs.forEach((x) => delete x.nova); });
   if (S.tela === "conversa") { const v = conversa(S.id); if (v && v.naoLidas && !sup()) { v.msgs.slice(-v.naoLidas).forEach((x) => (x.nova = true)); v.naoLidas = 0; } S.rolarFim = true; }
@@ -75,6 +75,14 @@ function sincronizarMockbar() {
   sel.value = S.como;
 }
 const abrirModal = (o) => { S.modal = o; S.modalTopo = true; render(); };
+const BLOCO_NOME = { prospects: "Prospects", clientes: "Clientes", atraso: "Em atraso" };
+// conclui o agendamento de hoje (ou atrasado) quando ela fala pelo WhatsApp; a conversa vira "esperando resposta" se ninguém responder
+function concluirPorWa(c, como) {
+  if (!(c.prox && c.prox.d <= HOJE)) return false;
+  const t0 = c.prox; c.prox = null; c.eventos.unshift({ d: HOJE, h: agora(), sistema: `Contato agendado concluído (${t0.assunto}) pelo ${como}` }); feito(c.id, `${como} · ${esc(t0.assunto)} · enviado`);
+  if (ehProspect(c) && c.sit === "novo") { c.sit = "contato"; c.eventos.unshift({ d: HOJE, h: agora(), sistema: "Novo → Em contato · V3" }); }
+  return true;
+}
 function enviar(id) {
   const v = conversa(id), t = (S.rascunho[id] || "").trim();
   if (!t) return toast("Escreva a resposta primeiro.");
@@ -82,20 +90,13 @@ function enviar(id) {
   tick(); v.msgs.push({ dir: "eu", d: HOJE, h: agora(), t }); v.dia = HOJE; v.hora = agora(); v.naoLidas = 0; S.rascunho[id] = "";
   const c = v.conta ? conta(v.conta) : null;
   if (c && !c.eventos.some((e) => e.conv === v.id && !e.res)) c.eventos.unshift({ d: HOJE, h: agora(), canal: v.canal, dir: "eu", res: null, memo: "", auto: true, conv: v.id });
-  // fase anda sozinha: 1ª mensagem dela pela V3 a um lead Novo (ou da caixa) → Contatado, "movido pela V3"
-  const moveu = c && (c.neg?.etapa === "novo" || naCaixa(c)) && moverEtapa(c, "contatado", "v3", "1ª mensagem dela pela Central");
-  // enviou a partir do item da agenda: o contato agendado de hoje está feito
-  let concluiu = false;
-  if (c && S.deItem === c.id && c.prox && c.prox.d <= HOJE) { const t0 = c.prox; c.prox = null; concluiu = true; c.eventos.unshift({ d: HOJE, h: agora(), sistema: `Contato agendado concluído (${t0.assunto}) pelo ${CANAL[v.canal].nome}` }); feito(c.id, `${CANAL[v.canal].nome} · ${esc(t0.assunto)} · enviado`); }
-  S.deItem = null;
-  S.rolarFim = true; render(); toast(`${concluiu ? "Enviado · o contato agendado de hoje ficou feito" : c ? "Enviado pelo chip dela · a Atividade da ficha atualiza o ticket" : "Enviado pelo chip dela"}${moveu ? " · etapa → Contatado (movido pela V3)" : ""}`);
+  const concluiu = c && S.deItem === c.id && concluirPorWa(c, CANAL[v.canal].nome);
+  if (c && !concluiu && ehProspect(c) && c.sit === "novo") { c.sit = "contato"; c.eventos.unshift({ d: HOJE, h: agora(), sistema: "Novo → Em contato · V3" }); }
+  S.deItem = null; S.rolarFim = true; render(); toast(concluiu ? "Enviado · o contato de hoje ficou feito" : "Enviado pelo chip dela");
 }
-
-// WhatsApp: na Central (abre/começa a conversa dela na V3) ou no WhatsApp Web do chip dela (SPEC_V3 §10)
 function waCentral(c) {
   let v = S.conv.filter((x) => x.conta === c.id && x.canal === "whatsapp").sort((a, b) => Number(a.fechada) - Number(b.fechada))[0];
-  if (!v) { const p = pessoaPrincipal(c); v = { id: ++S.seqConv, dona: c.dona, canal: "whatsapp", nome: p?.nome || c.nome, conta: c.id, hora: agora(), dia: HOJE, naoLidas: 0,
-    msgs: [{ sis: true, d: HOJE, h: agora(), t: "Conversa nova · fora da janela de 24 h: a V3 oferece um template pro 1º envio" }] }; S.conv.push(v); }
+  if (!v) { const p = pessoaPrincipal(c); v = { id: ++S.seqConv, dona: c.dona, canal: "whatsapp", nome: p?.nome || c.nome, conta: c.id, hora: agora(), dia: HOJE, naoLidas: 0, msgs: [{ sis: true, d: HOJE, h: agora(), t: "Conversa nova · fora da janela de 24 h: a V3 oferece um template pro 1º envio" }] }; S.conv.push(v); }
   S.deItem = c.prox && c.prox.d <= HOJE ? c.id : null;
   ir(`#/conversas/${v.id}`); setTimeout(() => document.getElementById("composer")?.focus(), 50);
 }
@@ -104,142 +105,85 @@ function waWeb(c) {
   const p = pessoaPrincipal(c), link = waLink(p?.tel || "");
   let v = S.conv.find((x) => x.conta === c.id && x.canal === "whatsapp" && !x.fechada);
   if (!v) { v = { id: ++S.seqConv, dona: c.dona, canal: "whatsapp", nome: p?.nome || c.nome, conta: c.id, hora: agora(), dia: HOJE, naoLidas: 0, msgs: [] }; S.conv.push(v); }
-  v.msgs.push({ dir: "eu", d: HOJE, h: agora(), t: "(mandado pelo WhatsApp Web do chip dela — chega aqui pelo eco da coexistência, origem celular)" }); v.dia = HOJE; v.hora = agora();
+  v.msgs.push({ dir: "eu", d: HOJE, h: agora(), t: "(mandado pelo WhatsApp Web do chip dela — chega aqui pelo eco da coexistência)" }); v.dia = HOJE; v.hora = agora();
   const ev = c.eventos.find((e) => e.conv === v.id && !e.res);
   if (ev) ev.web = true; else c.eventos.unshift({ d: HOJE, h: agora(), canal: "whatsapp", dir: "eu", res: null, memo: "", auto: true, conv: v.id, web: true });
-  const tinha = c.prox && c.prox.d <= HOJE ? c.prox : null;
-  const moveu = (c.neg?.etapa === "novo" || naCaixa(c)) && moverEtapa(c, "contatado", "v3", "1ª mensagem dela pelo WhatsApp Web (eco)");
-  if (tinha) { c.prox = null; c.eventos.unshift({ d: HOJE, h: agora(), sistema: `Contato agendado concluído (${tinha.assunto}) pelo WhatsApp Web` }); }
-  feito(c.id, `WhatsApp Web${tinha ? ` · ${esc(tinha.assunto)}` : ""} · amanhã vira "esperando resposta" se ninguém responder`);
-  render(); toast(`Abre ${link} numa aba nova${tinha ? " · item marcado como feito" : " · entrou na Atividade"}${moveu ? " · etapa → Contatado (movido pela V3)" : ""}`);
+  const tinha = concluirPorWa(c, "WhatsApp Web");
+  if (!tinha && ehProspect(c) && c.sit === "novo") c.sit = "contato";
+  render(); toast(`Abre ${link} numa aba nova${tinha ? " · item feito" : ""}`);
 }
-function adiar(c, modo) {
-  if (modo === "data") return abrirModal({ tipo: "agenda", id: c.id, adiar: true, prox: { ...proxVazio(c.prox?.assunto || "cobrar resposta"), h: c.prox?.h || "", modo: "data" }, canal: canalPrevisto(c) });
-  tick(); const antes = c.prox, d = modo === "amanha" ? AMANHA() : MAIS3();
-  c.prox = { d, h: antes?.h || "", assunto: antes?.assunto || "cobrar resposta", canal: antes?.canal || (convAberta(c)?.canal ?? "whatsapp") };
-  c.eventos.unshift({ d: HOJE, h: agora(), sistema: `Adiado: ${antes ? rotProx(antes) : "esperando resposta"} → ${rotProx(c.prox)}` });
-  render(); toast(`Adiado pra ${rotProx(c.prox)} — sai de hoje, está na Agenda › Semana`);
-}
-function proxDiaUtil(d, k) { let x = d; do { x = somaDias(x, k); } while ([0, 6].includes(dow(x))); return x; }
-function converterGescor(c) {
-  c.tipo = "cliente"; c.eraLead = { fonte: c.fonte, campanha: c.neg.campanha };
-  c.bi = { consumo: c.neg.litros || 2000, ultimo: HOJE, vencidos: 0, titulos: 0, limite: 50000, segmento: c.segmento, desde: 2026, primeira: HOJE, ciclo: 14, tanques: 0, l12: c.neg.litros || 2000, r12: (c.neg.litros || 2000) * 6.2, comodatoEquip: [], proxEntrega: null };
-  c.neg.mov = { por: "gescor", d: HOJE, h: agora() };
-  c.eventos.unshift({ d: HOJE, h: agora(), sistema: "Achou o CNPJ no BI: cadastrado no rep 0412 (o seu) · virou Cliente · GESCOR", mov: "gescor" });
-}
+const chaveProx = (c) => c.prox ? c.prox.d : "";
 document.addEventListener("click", (e) => {
   const el = e.target.closest("[data-acao]");
   if (S.drop && !e.target.closest(`[data-drop="${S.drop}"]`)) { S.drop = null; if (!el) return render(); }
   if (!el) return;
   const a = el.dataset.acao, v = el.dataset.v, m = S.modal;
-  if ((a === "fundo" || a === "fundo-gaveta") && !("fundo" in e.target.dataset)) return;
+  if (a === "fundo" && !("fundo" in e.target.dataset)) return;
   if (a !== "drop") S.drop = null;
   switch (a) {
     case "drop": S.drop = S.drop === v ? null : v; return render();
-    case "ag-aba": S.agAba = v; S.agFiltro = ""; history.replaceState(null, "", v === "semana" ? "#/vendas/agenda?aba=semana" : "#/vendas/agenda"); S.ultimaRota = "#/vendas/agenda"; return render();
-    case "gaveta": case "fundo-gaveta": S.gaveta = a === "gaveta" ? !S.gaveta : false; return render();
-    case "sug": { const [id, modo, k] = v.split("|"); return agendarSug(conta(id), modo, k); }
-    case "sug-sel": S.sugSel = S.sugSel.includes(Number(v)) ? S.sugSel.filter((x) => x !== Number(v)) : [...S.sugSel, Number(v)]; return render();
-    case "sug-limpar": S.sugSel = []; return render();
-    case "sug-lote": { const sg = sugestoes(), ids = [...S.sugSel]; ids.forEach((id) => { const s = sg.find((x) => x.c?.id === id); if (s) agendarSug(s.c, v, s.k, true); }); S.sugSel = []; S.flash = ids[0];
-      render(); return toast(`${ids.length} agendados pra ${v === "hoje" ? "hoje (sem hora, no topo do dia)" : rotData(AMANHA())}`); }
-    case "sug-filtro": S.sugFiltro = v; S.exp.sug = false; return render();
-    case "lote-leads": { const i = v.lastIndexOf("|"); return loteLeads(v.slice(0, i), v.slice(i + 1)); }
-    case "nao-falar": { const [id, motivo] = v.split("|"), c = conta(id); c.naoFalarAte = somaDias(HOJE, 30); c.naoFalarN = (c.naoFalarN || 0) + 1;
-      c.eventos.unshift({ d: HOJE, h: agora(), sistema: `Não falar por 30 d · ${motivo}` }); render();
-      return toast(c.naoFalarN >= 2 && aberto(c) ? `${esc(c.nome)}: 2ª vez "não falar" — vale marcar Perdido na ficha?` : `${esc(c.nome)} some das sugestões até ${dm(c.naoFalarAte)} (${motivo})`); }
-    case "res-dia": S.resDia = v === "0" ? HOJE : proxDiaUtil(S.resDia, Number(v)); S.resSel = null; return render();
-    case "tl-sel": S.resSel = S.resSel === Number(v) ? null : Number(v); S.flash = null; return render();
-    case "levar-atrasados": { const l = meus(S.contas).filter((c) => c.prox && c.prox.d < HOJE); tick(); l.forEach((c) => { const antes = rotProx(c.prox); c.prox = { ...c.prox, d: AMANHA() }; c.eventos.unshift({ d: HOJE, h: agora(), sistema: `Levado pra amanhã (era ${antes})` }); });
-      render(); return toast(`${l.length} atrasados levados pra ${rotData(AMANHA())} · dia fechado`); }
-    case "fun-vista": S.funVista = v; S.funCel = ""; history.replaceState(null, "", v === "fonte" ? "#/vendas/leads?vista=funil&por=fonte" : "#/vendas/leads?vista=funil"); S.ultimaRota = "#/vendas/leads"; return render();
-    case "fun-foco": S.funVista = "etapa"; S.funCel = ""; S.funFech = Object.fromEntries(ETAPAS_FUNIL.map(([k]) => [k, k !== v])); render(); return document.getElementById("sec-" + v)?.scrollIntoView({ block: "start" });
-    case "lead-vista": S.leadVista = v; S.funCel = ""; S.exp.arq = false; S.caixaSel = null; S.caixaIdx = 0; history.replaceState(null, "", v === "caixa" ? "#/vendas/leads" : `#/vendas/leads?vista=${v}`); S.ultimaRota = "#/vendas/leads"; render(); return window.scrollTo(0, 0);
-    case "cli-vista": S.cliVista = v; S.exp.cli = false; history.replaceState(null, "", v === "todos" ? "#/vendas/clientes" : `#/vendas/clientes?vista=${v}`); S.ultimaRota = "#/vendas/clientes"; render(); return window.scrollTo(0, 0);
-    case "fontes-sug": return abrirModal({ tipo: "fontes" });
-    case "fun-cel": S.funCel = v; return render();
-    case "fun-fech": S.funFech[v] = !S.funFech[v]; return render();
-    case "caixa-sel": S.caixaSel = Number(v); S.drop = null; render(); if (innerWidth < 1024) window.scrollTo(0, 0); return;
-    case "caixa-nav": return navCaixa(Number(v));
-    case "caixa-voltar": S.caixaSel = null; return render();
-    case "prev-editar": S.editPrev = !S.editPrev; render(); if (S.editPrev) document.getElementById("prev-nec")?.focus(); return;
-    case "lead-semcls": S.leadSemCls = !S.leadSemCls; return render();
-    case "cls-vale": { const [id, x] = v.split("|"), c = conta(id); c.cls ||= {}; c.cls.vale = c.cls.vale === x ? null : x; return render(); }
-    case "cls-prod": { const [id, x] = v.split("|"); conta(id).neg.produto = x; return render(); }
-    case "caixa-agendar": { const c = conta(v), p = pessoaPrincipal(c); return abrirModal({ tipo: "agenda", id: c.id, prox: proxVazio("1º contato"), canal: p?.tel && /\(\d\d\) 9/.test(p.tel) ? "whatsapp" : "telefone" }); }
-    case "descartar": return abrirModal({ tipo: "descartar", id: Number(v), motivo: "" });
-    case "salvar-descartar": { if (!m.motivo) { m.erro = true; return render(); } const c = conta(m.id); tick(); c.neg.motivo = m.motivo; c.neg.descartado = true; c.prox = null; moverEtapa(c, "perdido", "ela", `descartado da caixa · ${m.motivo}`);
-      S.modal = null; render(); return toast(`${esc(c.nome)} descartado · foi pro Arquivo (Leads › Arquivo)`); }
-    case "path": { const [id, et] = v.split("|"); return abrirRegistrar(Number(id), null, false, false, ETAPA_RES[et]); }
-    case "fonte-atraso": S.fonteAtraso = !S.fonteAtraso; render(); return toast(`Em atraso ${S.fonteAtraso ? "ligado" : "desligado"} nas Ações sugeridas da equipe`);
-    case "proposta-app": { const c = conta(v); tick(); c.eventos.unshift({ d: HOJE, h: agora(), sistema: "Proposta #1441 gerada pelo app (PDF comercial)" });
-      const mv = aberto(c) && RANK[c.neg.etapa] < RANK.proposta && moverEtapa(c, "proposta", "proposta", "#1441 gerada pro CNPJ");
-      render(); return toast(`(mockup) Abre Propostas com o CNPJ da ficha · proposta #1441${mv ? " · etapa → Proposta (movido pela proposta)" : ""}`); }
-    case "pedido-app": { const c = conta(v); if (c.tipo === "cliente" && !aberto(c)) return toast("(mockup) Abre Pedidos internos · anotar pedido pra este cliente.");
-      tick(); c.eventos.unshift({ d: HOJE, h: agora(), sistema: "Pedido #1290 anotado no app (5.000 L)" }); const mv = aberto(c) && moverEtapa(c, "ganho", "pedido", "pedido #1290 anotado"); c.prox = null;
-      render(); return toast(mv ? `Pedido anotado · etapa → Ganho (movido pelo pedido)${c.tipo === "prospect" ? " · Aguardando GESCOR" : ""}` : "Pedido anotado."); }
-    case "ja-cadastrei": { const c = conta(v); S.checando = c.id; c.gescorSolicitado = HOJE; render();
-      return setTimeout(() => { S.checando = null; converterGescor(c); render(); toast(`${esc(c.nome)} achado no BI (rep 0412) · virou Cliente com o negócio · saiu de Leads e está em Clientes`); }, 1300); }
+    // próximo contato (toda linha): Hoje · Amanhã · Outro dia ▾ · Reagendar ▾
+    case "prox": { const [id, modo, ctx] = v.split("|"), c = conta(id);
+      if (modo === "data") return abrirModal({ tipo: "agenda", id: c.id, prox: { ...proxVazio(c.prox?.assunto || (c.sit === "novo" ? "1º contato" : ""), canalPrevisto(c)), modo: "data", h: c.prox?.h || "" } });
+      tick(); marcarProx(c, modo, ctx); S.flash = c.id; render();
+      return toast(`${esc(c.nome)}: ${rotProx(c.prox)}${c.prox.d === HOJE ? ` · está em Hoje › ${BLOCO_NOME[blocoDe(c)]}` : ""}`); }
+    case "dia": S.dia = v === "0" ? HOJE : (() => { let x = S.dia; do { x = somaDias(x, Number(v)); } while ([0, 6].includes(dow(x))); return x; })(); history.replaceState(null, "", S.dia === AMANHA() ? "#/vendas?dia=amanha" : "#/vendas"); return render();
+    case "levar-atrasados": { const l = itensHoje(HOJE).atrasados; tick(); l.forEach((c) => { const antes = rotProx(c.prox); c.prox = { ...c.prox, d: AMANHA() }; c.eventos.unshift({ d: HOJE, h: agora(), sistema: `Levado pra amanhã (era ${antes})` }); });
+      render(); return toast(`${l.length} atrasados levados pra ${rotData(AMANHA())}`); }
+    case "p-aba": S.pAba = v; S.exp.pro = false; history.replaceState(null, "", `#/vendas/prospects?aba=${v}`); S.ultimaRota = "#/vendas/prospects"; render(); return window.scrollTo(0, 0);
+    case "c-aba": S.cAba = v; S.exp.cli = false; history.replaceState(null, "", v === "todos" ? "#/vendas/clientes" : `#/vendas/clientes?aba=${v}`); S.ultimaRota = "#/vendas/clientes"; render(); return window.scrollTo(0, 0);
+    case "path": { const [id, res] = v.split("|"); return abrirRegistrar(Number(id), null, false, false, res); }
+    case "reativar": { const c = conta(v); return abrirModal({ tipo: "agenda", id: c.id, reativar: true, prox: proxVazio("retomar contato", canalPrevisto(c)) }); }
+    case "proposta-app": return abrirRegistrar(Number(v), null, false, false, conta(v).sit === "proposta" ? null : ehProspect(conta(v)) ? "gerar_proposta" : "pediu_proposta");
+    case "visita": { const c = conta(v); c.visita = !(c.visita && !c.visitaFeita); c.visitaFeita = false; c.eventos.unshift({ d: HOJE, h: agora(), sistema: c.visita ? "Visita pedida ao supervisor" : "Pedido de visita retirado" }); render(); return toast(c.visita ? "Visita pedida — aparece em Equipe pro supervisor." : "Pedido de visita retirado."); }
+    case "visita-feita": { const c = conta(v); c.visitaFeita = true; c.eventos.unshift({ d: HOJE, h: agora(), sistema: `Visita marcada como atendida por ${SUPERVISOR.curto}` }); toast(`Visita de ${c.nome} marcada como atendida.`); return render(); }
     case "ligar": return abrirRegistrar(Number(v), null, false, true);
     case "wa-central": return waCentral(conta(v));
     case "wa-web": return waWeb(conta(v));
-    case "email": { const c = conta(v), cv = S.conv.find((x) => x.conta === c.id && x.canal === "email"); if (cv) { S.deItem = c.prox && c.prox.d <= HOJE ? c.id : null; return ir(`#/conversas/${cv.id}`); }
-      const p = c.pessoas.find((x) => x.email); return toast(p ? `(mockup) E-mail novo pra ${p.email} — a V3 abre o composer na caixa dela (e-mail só formaliza proposta).` : "Ninguém com e-mail nesta ficha — adicione em Pessoas."); }
-    case "adiar": { const [id, modo] = v.split("|"); return adiar(conta(id), modo); }
+    case "email": { const c = conta(v), cv = S.conv.find((x) => x.conta === c.id && x.canal === "email"); if (cv) return ir(`#/conversas/${cv.id}`);
+      const p = c.pessoas.find((x) => x.email); return toast(p ? `(mockup) E-mail novo pra ${p.email} — abre o composer da V3 na caixa dela.` : "Ninguém com e-mail nesta ficha — adicione em Pessoas."); }
     case "pwa": return toast(`(mockup) Abre ${PWA_DESTINO[v]} — a página que já existe, recortada pela carteira de ${quemRecorte()}.`);
-    case "negocio-novo": return abrirModal({ tipo: "negocio", id: null, conta: "", produto: "S10", litros: "2000", comodato: false, conc: "", campanha: "", prox: proxVazio("1º contato do negócio") });
     case "menu": S.menu = !S.menu; return render();
-    case "fundo": case "fechar": S.modal = null; return render();
+    case "fundo": case "fechar": { const mm = S.modal; S.modal = null; if (mm?.tipo === "novo" && mm.criado) return ir(`#/fichas/${mm.criado}`); return render(); }
     case "expandir": S.exp[v] = !S.exp[v]; return render();
     case "sel": S.sel = v; return render();
+    case "sel-hoje": S.sel = v; return ir("#/vendas");
     case "conv-vista": S.convVista = v; return render();
     case "aba": S.aba = v; return render();
-    case "semana": S.semana = v === "0" ? 0 : S.semana + Number(v); S.agSel = null; return render();
-    case "ag-sel": S.agSel = S.agSel === Number(v) ? null : Number(v); return render();
     case "ir": if (!e.target.closest("a")) ir(v); return;
-    case "fazer": case "registrar": return abrirRegistrar(Number(v));
+    case "registrar": return abrirRegistrar(Number(v));
     case "resultado": return abrirRegistrar(null, Number(el.dataset.conv));
     case "fechar-agendar": return abrirRegistrar(null, Number(el.dataset.conv), true);
-    case "agendar": { const c = conta(v); return abrirModal({ tipo: "agenda", id: c.id, prox: proxVazio(c.prox?.assunto || (recompra(c) ? "hora de pedir" : naCaixa(c) || semContato(c) ? "1º contato" : "")), canal: canalPrevisto(c) }); }
-    case "agendar-novo": return abrirModal({ tipo: "agenda", id: null, conta: "", prox: proxVazio(""), canal: "telefone" });
-    case "m-set": m[el.dataset.campo] = v; if (el.dataset.campo === "res") { m.erroRes = false; m.erroProx = ""; if (v === "qualificado") m.prox.modo = "previsao"; else if (m.prox.modo === "previsao") m.prox.modo = null; } return render();
+    case "m-set": { m[el.dataset.campo] = v; if (m.tipo === "reg" && (el.dataset.campo === "res" || el.dataset.campo === "depois")) { m.erroRes = false; m.erroProx = ""; if (el.dataset.campo === "res") m.motivo = ""; aplicarSistema(m, conta(m.id)); } return render(); }
     case "prox-atalho": { m.prox.modo = v; m.erroProx = "";
+      const c = conta(m.id);
       if (v === "hoje2h") { m.prox.d = HOJE; m.prox.h = maisHoras(agora(), 2); }
-      else if (v === "previsao") { m.prox.d = ""; m.prox.h = ""; }
-      else if (v === "ciclo") { const c = conta(m.id || m.conta); let d = somaDias(c.bi.ultimo, c.bi.ciclo); if (d <= HOJE) d = AMANHA(); while ([0, 6].includes(dow(d))) d = somaDias(d, 1); m.prox.d = d; }
-      else m.prox.d = v === "amanha" ? AMANHA() : v === "3du" ? MAIS3() : (m.prox.d || "");
+      else if (v === "sistema") { const s = proxSistema(m, c); m.prox.d = s.d; m.prox.h = ""; m.prox.assunto = s.assunto; }
+      else if (v === "ciclo") m.prox.d = util(somaDias(HOJE, c.bi.ciclo));
+      else m.prox.d = v === "amanha" ? AMANHA() : v === "3du" ? MAIS3() : v === "d30" ? util(somaDias(HOJE, 30)) : v === "d60" ? util(somaDias(HOJE, 60)) : (m.prox.d || "");
       render(); if (v === "data") document.getElementById("p-d")?.focus(); return; }
     case "salvar-reg": return salvarRegistro();
     case "salvar-agenda": return salvarAgenda();
-    case "novo-lead": return abrirNovoLead(el.dataset.conv ? Number(el.dataset.conv) : null, el.dataset.q || "");
+    case "novo-prospect": return abrirNovoProspect(el.dataset.conv ? Number(el.dataset.conv) : null, el.dataset.q || "");
+    case "np-ligar": S.modal = null; return abrirRegistrar(Number(v), null, false, true);
+    case "np-wa": { const c = conta(v), cv = S.conv.find((x) => x.conta === c.id); S.modal = null; return cv ? ir(`#/conversas/${cv.id}`) : waCentral(c); }
+    case "np-deixar": S.modal = null; S.flash = Number(v); S.manterFlash = true; toast(`${esc(conta(v).nome)} está em Prospects › Novos`); return ir("#/vendas/prospects?aba=novos");
     case "cnpj-exemplo": Object.assign(m, { cnpj: v === "novo" ? CNPJ_EXEMPLO_NOVO : (S.contas.find((c) => c.id === 4) || S.contas[0]).cnpj, erro: "", receita: null, ja: null }); render(); return consultar();
     case "consultar": return consultar();
     case "salvar-novo": return salvarNovo();
-    case "perder": { const c = conta(v); return abrirModal({ tipo: "perder", id: c.id, motivo: "", conc: c.neg?.concorrente || "" }); }
-    case "salvar-perder": { if (!m.motivo) { m.erro = true; return render(); } const c = conta(m.id); tick(); Object.assign(c.neg, { motivo: m.motivo, concorrente: m.conc }); c.prox = null;
-      moverEtapa(c, "perdido", "ela", `${m.motivo}${m.conc ? " · " + m.conc : ""}`); S.modal = null; toast("Negócio marcado como perdido · foi pro Arquivo."); return render(); }
-    case "abrir-negocio": { const c = conta(v), n = novoNeg(c); return abrirModal({ tipo: "negocio", id: c.id, produto: n.produto, litros: String(n.litros), comodato: false, conc: "", campanha: recompra(c) && recompra(c) !== "pronto" ? "re" : "", prox: proxVazio("1º contato do negócio") }); }
-    case "salvar-negocio": { const c = conta(m.id || m.conta), l = Number(soDig(m.litros)); m.erro = !l; m.erroConta = !c; if (!c) return render(); const ok = c.prox || validarProx(m, false); if (m.erro || !ok) return render();
-      tick(); c.neg = novoNeg(c, { produto: m.produto, litros: l, comodato: m.comodato, concorrente: m.conc, campanha: m.campanha || "", mov: { por: "ela", d: HOJE, h: agora() } }); if (!c.prox) c.prox = proxFinal(m.prox);
-      c.eventos.unshift({ d: HOJE, h: agora(), sistema: `Negócio aberto · ${litros(l)}/mês ${m.produto}${m.comodato ? " + comodato" : ""} · etapa Novo` }); S.modal = null; toast("Negócio aberto · etapa Novo"); return render(); }
-    case "visita": { const c = conta(v); c.neg.visita = !c.neg.visita; c.neg.visitaFeita = false; if (c.neg.visita) c.eventos.unshift({ d: HOJE, h: agora(), sistema: "Visita solicitada ao supervisor" });
-      toast(c.neg.visita ? "Visita solicitada — aparece em Equipe pro supervisor." : "Pedido de visita retirado."); render(); if (c.neg.visita) document.getElementById("visita-nota")?.focus(); return; }
-    case "visita-feita": { const c = conta(v); c.neg.visitaFeita = true; c.eventos.unshift({ d: HOJE, h: agora(), sistema: `Visita marcada como atendida por ${SUPERVISOR.curto}` }); toast(`Visita de ${c.nome} marcada como atendida.`); return render(); }
-    case "gescor": return abrirModal({ tipo: "gescor", id: Number(v) });
-    case "copiar-ficha": return copiar(fichaGescor(conta(v)).map(([k, x]) => `${k}: ${x || "—"}`).join("\n"));
     case "vincular": return abrirModal({ tipo: "vincular", id: Number(v) });
-    case "vincular-cli": { const cv = conversa(S.modal.conv || S.modal.id), c = conta(v); ligarConversa(cv, c, ""); S.modal = null; toast(`Número vinculado a ${c.nome}.`); return ir(`#/conversas/${cv.id}`); }
-    case "ignorar": S.conv = S.conv.filter((x) => x.id !== Number(v)); toast("Conversa ignorada (sai da caixa)."); return ir("#/conversas");
+    case "vincular-cli": { const cv = conversa(S.modal.id), c = conta(v); ligarConversa(cv, c, ""); S.modal = null; toast(`Número vinculado a ${c.nome}.`); return ir(`#/conversas/${cv.id}`); }
+    case "ignorar": S.conv = S.conv.filter((x) => x.id !== Number(v)); toast("Conversa ignorada."); return ir("#/conversas");
     case "enviar": return enviar(Number(el.dataset.conv));
     case "reabrir-conv": { const cv = conversa(v); cv.fechada = false; cv.msgs.push({ sis: true, d: HOJE, h: agora(), t: `Reaberto por ${vend(cv.dona).curto}` }); S.rolarFim = true; return render(); }
-    case "modulo": { const c = el.dataset.conta ? conta(el.dataset.conta) : null; return toast(`(mockup) Abre ${MOD_NOME[v]} — a tela que já existe — filtrada por ${c ? c.nome : sup() && !S.sel ? "toda a equipe" : `carteira de ${vend(S.sel || S.como).curto}`}.`); }
+    case "modulo": { const c = el.dataset.conta ? conta(el.dataset.conta) : null; return toast(`(mockup) Abre ${MOD_NOME[v]} — a tela que já existe — filtrada por ${c ? c.nome : quemRecorte()}.`); }
     case "mock": return toast(`(mockup) ${v}`);
     case "pedir-credito": { const c = conta(v); c.eventos.unshift({ d: HOJE, h: agora(), sistema: "Análise de crédito pedida" }); toast("Análise de crédito pedida — abre em Crédito com o CNPJ da ficha."); return render(); }
     case "pessoa": return abrirModal({ tipo: "pessoa", id: Number(v), nome: "", tel: "", email: "", papel: "decisor", prefere: "whatsapp" });
     case "salvar-pessoa": { if (!m.nome.trim() || (!soDig(m.tel) && !m.email.trim())) { m.erro = true; return render(); } conta(m.id).pessoas.push({ nome: m.nome.trim(), papel: m.papel, tel: m.tel, email: m.email, prefere: m.prefere }); S.modal = null; toast("Pessoa adicionada."); return render(); }
     case "entrar-como": S.como = v; S.entrouComo = true; S.sel = ""; sincronizarMockbar(); return ir("#/vendas");
     case "sair-como": S.como = "sup"; S.entrouComo = false; sincronizarMockbar(); return ir("#/equipe");
-    // importação
+    // importação (como v4)
     case "imp-exemplo": { const i = S.imp; i.texto = exemploImport(); if (!i.fonte) i.fonte = "lista"; if (!i.camp) i.camp = "Lista Cotia nov/26"; i.erro = {}; return render(); }
     case "imp-ia": { const i = S.imp; i.erro = {}; if (!i.fonte) i.erro.fonte = true; if (!i.camp.trim()) i.erro.camp = true; if (!i.texto.trim()) i.erro.texto = "Cole a lista ou suba um arquivo."; if (Object.keys(i.erro).length) return render();
       i.ia = true; render(); return setTimeout(() => { i.ia = false; impIrConferir(normalizarTexto(i.texto)); }, 1200); }
@@ -249,48 +193,38 @@ document.addEventListener("click", (e) => {
     case "imp-receita": { const i = S.imp; i.receita = true; render();
       return setTimeout(() => { i.linhas.forEach((l, k) => { const s = situacaoImp(l, k, i.linhas); if (!l.cnpj || !cnpjValido(l.cnpj) || s[3]) return; const r = RECEITA[soDig(l.cnpj)];
           l.razao = r ? r.razao : `${l.empresa || "Empresa " + soDig(l.cnpj).slice(0, 4)} Ltda`; if (!l.empresa) l.empresa = r?.fantasia || l.razao; if (!l.cidade) l.cidade = r?.cidade || "Cotia"; l.rec = true; });
-        i.receita = false; render(); toast("Receita: razão social e cidade preenchidas nas linhas com CNPJ (em verde)"); }, 900); }
+        i.receita = false; render(); toast("Receita: razão social e cidade preenchidas (em verde)"); }, 900); }
     case "imp-exp": { const ab = S.imp.aberta || (S.imp.aberta = {}); ab[v] = !ab[v]; return render(); }
     case "imp-voltar": S.imp.passo = 1; return render();
     case "imp-confirmar": return impConfirmar();
     case "imp-dist": return impDistribuir(v);
     case "imp-nova": S.imp = impVazio(); return render();
-    case "imp-desfazer": { const h = S.importacoes.find((x) => x.id === Number(v)); S.contas = S.contas.filter((c) => !h.ids.includes(c.id)); h.desfeita = true; render(); return toast(`Importação desfeita · ${h.ids.length} leads removidos`); }
+    case "imp-desfazer": { const h = S.importacoes.find((x) => x.id === Number(v)); S.contas = S.contas.filter((c) => !h.ids.includes(c.id)); h.desfeita = true; render(); return toast(`Importação desfeita · ${h.ids.length} prospects removidos`); }
   }
 });
-document.addEventListener("toggle", (e) => { if (e.target.dataset?.erp) S.erpAberto = e.target.open; if (e.target.dataset?.prox) S.proxFechado = !e.target.open; }, true);
+document.addEventListener("toggle", (e) => { if (e.target.dataset?.erp) S.erpAberto = e.target.open; if (e.target.dataset?.prox) S.proxFechado = !e.target.open; if (e.target.dataset?.atr && S.atrAberto !== e.target.open) { S.atrAberto = e.target.open; render(); } }, true);
 document.addEventListener("change", (e) => {
   if (e.target.id === "imp-arq" && e.target.files?.length) { const i = S.imp; i.texto = exemploImport(); if (!i.fonte) i.fonte = "lista"; if (!i.camp) i.camp = e.target.files[0].name.replace(/\.\w+$/, ""); render(); toast(`(mockup) Lido ${esc(e.target.files[0].name)} · ${i.texto.split("\n").length} linhas`); }
 });
 document.addEventListener("input", (e) => {
   const t = e.target, m = S.modal, k = t.dataset.input;
   if (k === "busca") { S.buscaQ = t.value; return render(); }
-  if (k === "cli-q") { S.cliQ = t.value; S.exp.cli = false; return render(); }
   if (k === "convq") { S.convQ = t.value; return render(); }
-  if (k === "fun-fonte") { S.funFonte = t.value; S.funCel = ""; return render(); }
-  if (k === "fun-camp") { S.funCamp = t.value; S.funCel = ""; return render(); }
-  if (k === "lead-fonte") { S.leadFonte = t.value; return render(); }
-  if (k === "lead-camp") { S.leadCamp = t.value; return render(); }
-  if (k === "lead-cid") { S.leadCid = t.value; return render(); }
-  if (k === "cls") { const c = conta(t.dataset.v); if (t.dataset.k === "litros") c.neg.litros = Number(soDig(t.value)) || 0; else c.segmento = t.value; return render(); }
-  if (k === "prev-nec") { const c = conta(t.dataset.v); if (c.neg) c.neg.previsaoNec = t.value; S.editPrev = false; toast(`Previsão de necessidade: ${mesTxt(t.value) || "—"}`); return render(); }
+  if (k === "p-fonte") { S.pFonte = t.value; return render(); }
+  if (k === "p-camp") { S.pCamp = t.value; return render(); }
+  if (k === "prazo") { const n = Number(t.value); if (n >= 1) { S.prazos[t.dataset.k] = n; render(); } return; }
   if (k === "imp") { S.imp[t.dataset.k] = t.value; if (t.tagName === "SELECT") S.imp.erro = {}; return render(); }
   if (k === "imp-cel") { if (t.dataset.maskc === "cnpj") t.value = cnpjMask(t.value); S.imp.linhas[Number(t.dataset.v)][t.dataset.k] = t.value; return render(); }
   if (k === "composer") { S.rascunho[S.id] = t.value; return; }
-  if (k === "visita-nota") { conta(t.dataset.v).neg.visitaNota = t.value; return; }
   if (!m) return;
   if (t.dataset.mask === "cnpj") t.value = cnpjMask(t.value);
   if (t.dataset.mask === "tel") { const d = soDig(t.value).slice(0, 11); t.value = d.length > 10 ? `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}` : d.length > 6 ? `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}` : d.length > 2 ? `(${d.slice(0, 2)}) ${d.slice(2)}` : d; }
-  if (t.dataset.m) { m[t.dataset.m] = t.type === "checkbox" ? t.checked : t.value; if (t.type === "checkbox" || t.tagName === "SELECT" || t.type === "month" || t.type === "date" || t.dataset.m === "litros") render(); return; }
+  if (t.dataset.m) { m[t.dataset.m] = t.type === "checkbox" ? t.checked : t.value; if (t.type === "checkbox" || t.tagName === "SELECT") render(); return; }
   if (t.dataset.mc) { m.contato[t.dataset.mc] = t.value; return; }
-  if (t.dataset.mp) { m.prox[t.dataset.mp] = t.value; if (t.dataset.mp === "d") { m.erroProx = ""; render(); } }
-  if (t.dataset.mp === "canal") render();
+  if (t.dataset.mp) { m.prox[t.dataset.mp] = t.value; if (t.dataset.mp === "d") { m.prox.modo = "data"; m.erroProx = ""; render(); } }
 });
-function navCaixa(d) { const l = listaCaixa(); if (!l.length) return; const i = Math.max(0, Math.min(l.length - 1, S.caixaIdx + d)); S.caixaSel = l[i].id; S.caixaIdx = i; render();
-  document.querySelector(`[data-acao=caixa-sel][data-v="${l[i].id}"]`)?.scrollIntoView({ block: "nearest" }); }
 document.addEventListener("keydown", (e) => {
-  if ((e.key === "ArrowDown" || e.key === "ArrowUp") && S.tela === "vendas" && S.vAba === "leads" && S.leadVista === "caixa" && !S.modal && !/INPUT|SELECT|TEXTAREA/.test(e.target.tagName)) { e.preventDefault(); return navCaixa(e.key === "ArrowDown" ? 1 : -1); }
-  if (e.key === "Escape" && (S.modal || S.drop || S.gaveta)) { if (S.modal) S.modal = null; else if (S.drop) S.drop = null; else S.gaveta = false; render(); }
+  if (e.key === "Escape" && (S.modal || S.drop)) { if (S.modal) S.modal = null; else S.drop = null; render(); }
   if (e.key === "Enter" && e.target.id === "n-cnpj") consultar();
   if (e.key === "Enter" && !e.shiftKey && e.target.id === "composer") { e.preventDefault(); enviar(S.id); }
 });

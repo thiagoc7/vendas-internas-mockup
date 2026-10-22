@@ -1,4 +1,4 @@
-// ── Leads › Importar em 3 passos (SPEC_V4 §6 + §12): entrada → conferir → importado (cai na caixa de entrada) ──
+// ── Prospects › Importar em 3 passos (como v4): entrada → conferir → importado (entra em Prospects › Novos) ──
 const CAMPOS_IMP = [["cnpj", "CNPJ", "w-40"], ["empresa", "Empresa", "w-52"], ["contato", "Contato", "w-28"], ["telefone", "Telefone", "w-32"], ["email", "E-mail", "w-36"], ["cidade", "Cidade", "w-28"], ["obs", "Obs", "w-32"]];
 const CIDADES_SP = ["Carapicuíba", "Cotia", "Barueri", "Osasco", "Jandira", "Itapevi", "São Paulo", "Santana de Parnaíba", "Embu das Artes", "Taboão da Serra", "Guarulhos"];
 const impVazio = () => ({ passo: 1, fonte: "", camp: "", texto: "", linhas: [], ia: false, receita: false, erro: {}, criados: [], dist: null });
@@ -37,11 +37,11 @@ function lerFormato(txt) {
   if (!cab.includes("empresa")) return null;
   return ls.slice(1).map((l) => { const v = l.split(sep), o = {}; cab.forEach((k, i) => (o[k] = (v[i] || "").trim())); return { cnpj: o.cnpj || "", empresa: o.empresa || "", contato: o.contato || "", telefone: o.telefone || "", email: o.email || "", cidade: o.cidade || "", obs: o.obs || "", dona: S.como === "sup" ? "fer" : S.como }; });
 }
-// situação de cada linha: ok · já é cliente/lead de alguém · duplicado na lista · CNPJ inválido · sem telefone
+// situação de cada linha: ok · já é cliente/prospect de alguém · duplicado na lista · CNPJ inválido · sem telefone
 function situacaoImp(l, i, linhas) {
   if (l.cnpj && !cnpjValido(l.cnpj)) return ["CNPJ inválido", COR.erro, false];
   const tel = soDig(l.telefone), ja = S.contas.find((c) => (l.cnpj && soDig(c.cnpj) === soDig(l.cnpj)) || (tel.length >= 10 && c.pessoas.some((p) => soDig(p.tel) === tel)));
-  if (ja) { const meu = ja.dona === (S.como === "sup" ? l.dona : S.como), q = ja.tipo === "cliente" ? "cliente" : "lead";
+  if (ja) { const meu = ja.dona === (S.como === "sup" ? l.dona : S.como), q = ja.tipo === "cliente" ? "cliente" : "prospect";
     return [meu ? `já é seu ${q}` : `já é ${q} da ${vend(ja.dona).curto}`, meu ? COR.cinza : COR.aviso, false, ja.id]; }
   const j = linhas.findIndex((x) => (l.cnpj && soDig(x.cnpj) === soDig(l.cnpj)) || (tel && soDig(x.telefone) === tel));
   if (j >= 0 && j < i) return ["repetido na lista", COR.aviso, false];
@@ -68,7 +68,7 @@ function passo2(m) {
   const dup = sit.filter((s) => s[3] || s[0] === "repetido na lista").length, inv = sit.filter((s) => s[0] === "CNPJ inválido").length, semTel = sit.filter((s) => s[0] === "sem telefone").length;
   const campo = (l, i, [k, , w]) => `<input id="imp-${k}-${i}" data-input="imp-cel" data-v="${i}" data-k="${k}" value="${esc(l[k])}" ${k === "cnpj" ? `data-maskc="cnpj"` : ""} class="${V.input.replace("w-full ", "")} ${w} py-1 ${k === "empresa" && !l.empresa ? "border-warning-300" : ""} ${l.rec && (k === "empresa" || k === "cidade") ? "bg-success-50/60 dark:bg-success-500/10" : ""}">`;
   const vendSel = (l, i) => sup() ? `<select data-input="imp-cel" data-v="${i}" data-k="dona" class="${V.input.replace("w-full ", "")} w-28 py-1">${VENDEDORAS.map((v) => `<option value="${v.id}" ${l.dona === v.id ? "selected" : ""}>${v.curto}</option>`).join("")}</select>` : "";
-  const pillSit = (s) => s[3] ? `<a href="#/clientes/${s[3]}" class="hover:underline">${pill(s[0], s[1])}</a>` : pill(s[0], s[1]);
+  const pillSit = (s) => s[3] ? `<a href="#/fichas/${s[3]}" class="hover:underline">${pill(s[0], s[1])}</a>` : pill(s[0], s[1]);
   // tabela enxuta: CNPJ · Empresa · Contato · Telefone · Cidade · Situação; e-mail, obs (e vendedora, no supervisor) no ▸ da linha
   const VIS = CAMPOS_IMP.filter(([k]) => !["email", "obs"].includes(k)), EXTRA = CAMPOS_IMP.filter(([k]) => ["email", "obs"].includes(k)), ab = m.aberta || (m.aberta = {});
   const W = { cnpj: "w-40", empresa: "", contato: "w-28", telefone: "w-32", cidade: "w-28" };
@@ -89,12 +89,12 @@ function passo2(m) {
 }
 function passo3(m) {
   const n = m.criados.length, d = m.dist;
-  return `<div class="space-y-4"><div class="rounded-xl border border-success-200 bg-success-50 p-4 dark:border-success-500/30 dark:bg-success-500/10"><p class="flex items-center gap-2 text-base font-semibold text-success-800 dark:text-success-300">${ic("check", "h-5 w-5")}${n} leads foram pra caixa de entrada</p>
-      <p class="mt-1 text-sm text-success-700 dark:text-success-400">Fonte ${FONTES[m.fonte]} · campanha ${esc(m.camp)}. Lá você classifica (segmento, consumo, vale contato?) e agenda.</p>
-      <a href="#/vendas/leads?vista=caixa&campanha=${m.campId}" class="${UI.btnP} mt-3">Abrir caixa de entrada</a></div>
-    ${sup() ? "" : `<div class="rounded-xl border border-gray-200 p-4 dark:border-gray-800"><p class="text-sm font-semibold text-gray-800 dark:text-white">Agendar 1º contato já?</p><p class="mt-0.5 ${V.muted}">Distribui pela Agenda em dias úteis; quem for agendado sai da caixa e entra no funil como Novo.</p>
-      ${d ? `<p class="mt-3 text-sm text-gray-700 dark:text-gray-200">${d}</p><a href="#/vendas/agenda?aba=semana" class="${UI.btnSm} mt-2">Ver na Agenda › Semana</a>`
-        : `<div class="mt-3 flex flex-wrap gap-2"><button type="button" data-acao="imp-dist" data-v="pordia" class="${UI.btnP}">5 por dia a partir de amanhã</button><button type="button" data-acao="imp-dist" data-v="hoje" class="${UI.btn}">todos hoje</button><button type="button" data-acao="imp-dist" data-v="depois" class="${UI.btn}">depois</button></div>`}</div>`}
+  return `<div class="space-y-4"><div class="rounded-xl border border-success-200 bg-success-50 p-4 dark:border-success-500/30 dark:bg-success-500/10"><p class="flex items-center gap-2 text-base font-semibold text-success-800 dark:text-success-300">${ic("check", "h-5 w-5")}${n} prospects em Novos</p>
+      <p class="mt-1 text-sm text-success-700 dark:text-success-400">Fonte ${FONTES[m.fonte]} · campanha ${esc(m.camp)}</p>
+      <a href="#/vendas/prospects?aba=novos" class="${UI.btnP} mt-3">Abrir Novos</a></div>
+    ${sup() ? "" : `<div class="rounded-xl border border-gray-200 p-4 dark:border-gray-800"><p class="text-sm font-semibold text-gray-800 dark:text-white">1º contato</p>
+      ${d ? `<p class="mt-2 text-sm text-gray-700 dark:text-gray-200">${d}</p>`
+        : `<div class="mt-3 flex flex-wrap gap-2"><button type="button" data-acao="imp-dist" data-v="pordia" class="${UI.btnP}">5 por dia a partir de amanhã</button><button type="button" data-acao="imp-dist" data-v="hoje" class="${UI.btn}">todos hoje</button><button type="button" data-acao="imp-dist" data-v="depois" class="${UI.btn}">o sistema marca em ${P("primeiro")} d</button></div>`}</div>`}
     <button type="button" data-acao="imp-nova" class="${UI.link} text-sm">Importar outra lista</button></div>`;
 }
 function telaImportar() {
@@ -102,9 +102,9 @@ function telaImportar() {
   const hist = `<section class="${UI.card} mt-4 overflow-hidden">${cardTopo("Importações", `<span class="${V.muted}">desfazer até 24 h</span>`)}<ul class="divide-y divide-gray-100 dark:divide-gray-800">${S.importacoes.map((h) => `<li class="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2.5 text-sm ${h.desfeita ? "opacity-50" : ""}"><span class="w-20 shrink-0 text-xs text-gray-500 dark:text-gray-400">${rotData(h.d)}${h.d === HOJE ? " " + h.h : ""}</span>
     <span class="min-w-0 flex-1 truncate"><b class="font-medium text-gray-800 dark:text-white">${esc(h.camp)}</b> <span class="text-xs text-gray-400">· ${FONTES[h.fonte]} · ${h.origem}</span></span><span class="text-xs text-gray-600 dark:text-gray-300">${h.aceitos} de ${h.total} aceitos</span>
     ${h.desfeita ? pill("desfeita", COR.cinza) : h.d === HOJE && !sup() ? `<button type="button" data-acao="imp-desfazer" data-v="${h.id}" class="${UI.btnSm}">desfazer</button>` : ""}</li>`).join("")}</ul>
-    <p class="border-t border-gray-100 px-4 py-2 text-xs text-gray-400 dark:border-gray-800">API: <span class="font-mono">POST /api/v1/agent/leads</span> cria uma importação pendente que cai no Conferir.</p></section>`;
-  return `<div class="mb-3 flex flex-wrap items-center justify-between gap-2"><a href="#/vendas/leads" class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-brand-500 dark:text-gray-400">${ic("esq", "h-4 w-4")}Leads</a></div>
-    <section class="${UI.card} overflow-hidden"><div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 px-4 py-3 dark:border-gray-800"><h2 class="text-base font-semibold text-gray-800 dark:text-white">Importar leads</h2>${stepper(m.passo)}</div>
+    </section>`;
+  return `<div class="mb-3 flex flex-wrap items-center justify-between gap-2"><a href="#/vendas/prospects?aba=novos" class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-brand-500 dark:text-gray-400">${ic("esq", "h-4 w-4")}Prospects</a></div>
+    <section class="${UI.card} overflow-hidden"><div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 px-4 py-3 dark:border-gray-800"><h2 class="text-base font-semibold text-gray-800 dark:text-white">Importar prospects</h2>${stepper(m.passo)}</div>
       <div class="p-4">${m.passo === 1 ? passo1(m) : m.passo === 2 ? passo2(m) : passo3(m)}</div></section>${hist}`;
 }
 function impIrConferir(linhas) {
@@ -119,17 +119,17 @@ function impConfirmar() {
   let camp = S.camps.find((k) => norm(k.nome) === norm(m.camp.trim()));
   if (!camp) { camp = { id: "k" + (++S.seq), nome: m.camp.trim(), tipo: m.fonte, fonte: m.fonte, data: HOJE }; S.camps.push(camp); }
   tick(); const imp = { id: ++S.seq, d: HOJE, h: agora(), fonte: m.fonte, camp: camp.nome, origem: "texto colado", total: m.linhas.length, aceitos: sel.length, ids: [], desfeita: false };
-  sel.forEach((l) => { const c = { id: ++S.seq, tipo: "prospect", dona: sup() ? l.dona : S.como, nome: l.empresa || "(sem nome)", razao: l.razao || l.empresa, cnpj: l.cnpj || "—", cidade: l.cidade || "—", produto: "S10", bi: null, segmento: "", gescor: null, fonte: m.fonte, fonteDet: "", obs: l.obs, cls: { vale: null },
+  sel.forEach((l) => { const c = { id: ++S.seq, tipo: "prospect", dona: sup() ? l.dona : S.como, nome: l.empresa || "(sem nome)", razao: l.razao || l.empresa, cnpj: l.cnpj || "—", cidade: l.cidade || "—", produto: "S10", bi: null, segmento: "", fonte: m.fonte, fonteDet: "", obs: l.obs,
+      camp: camp.id, litros: 0, sit: "novo", entrou: HOJE, perdas: [], prox: null, importacao: imp.id,
       pessoas: l.contato || l.telefone || l.email ? [{ nome: l.contato || "contato", papel: "principal", tel: l.telefone, email: l.email, prefere: /\(\d\d\) 9/.test(l.telefone) ? "whatsapp" : l.telefone ? "telefone" : "email", principal: true }] : [],
-      neg: novoNeg({ produto: "S10", tipo: "prospect" }, { litros: 0, campanha: camp.id, etapa: "caixa" }), prox: null, importacao: imp.id,
-      eventos: [{ d: HOJE, h: agora(), sistema: `Importado · ${camp.nome} (${FONTES[m.fonte]}) · caixa de entrada` }] };
+      eventos: [{ d: HOJE, h: agora(), sistema: `Importado · ${camp.nome} (${FONTES[m.fonte]})` }] };
     S.contas.push(c); imp.ids.push(c.id); });
   S.importacoes.unshift(imp); Object.assign(m, { passo: 3, criados: imp.ids, campId: camp.id, dist: null }); render(); window.scrollTo(0, 0);
 }
 function impDistribuir(modo) {
   const m = S.imp, cs = m.criados.map((id) => conta(id)).filter(Boolean);
-  if (modo === "depois") { m.dist = `Ficaram na caixa de entrada. Aparecem nas Ações sugeridas (Prospecção) com [5 hoje] [5 por dia].`; return render(); }
+  if (modo === "depois") { m.dist = `Sem data por enquanto: se ninguém agir, o sistema marca o 1º contato em ${diaCurto(somaDias(HOJE, P("primeiro")))}.`; return render(); }
   const dias = {}; tick();
-  cs.forEach((c, i) => { const d = modo === "hoje" ? HOJE : diasUteis(HOJE, 1 + Math.floor(i / 5)); c.prox = { d, h: "", assunto: "1º contato", canal: "whatsapp" }; moverEtapa(c, "novo", "ela", "agendou o 1º contato"); dias[d] = (dias[d] || 0) + 1; });
-  m.dist = `${cs.length} agendados: ${Object.entries(dias).map(([d, n]) => `<b>${n}</b> ${diaCurto(d)}`).join(" · ")}. Saíram da caixa e estão no funil como Novo.`; render();
+  cs.forEach((c, i) => { const d = modo === "hoje" ? HOJE : diasUteis(HOJE, 1 + Math.floor(i / 5)); c.prox = { d, h: "", assunto: "1º contato", canal: "whatsapp", tipo: "primeiro", por: "ela" }; dias[d] = (dias[d] || 0) + 1; });
+  m.dist = `${cs.length} agendados: ${Object.entries(dias).map(([d, n]) => `<b>${n}</b> ${diaCurto(d)}`).join(" · ")}`; render();
 }

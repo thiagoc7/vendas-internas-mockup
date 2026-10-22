@@ -1,10 +1,3 @@
-// ── Dados derivados do BI (fictícios, determinísticos) ──────────────────────
-function notasBI(c) {
-  if (c.tipo !== "cliente") return [];
-  const por = Math.max(500, Math.round(c.bi.consumo / (30 / c.bi.ciclo) / 500) * 500);
-  return [0, 1, 2].map((i) => { const d = somaDias(c.bi.ultimo, -i * c.bi.ciclo); return { nf: 48210 + c.id * 37 - i * 11, d, litros: por, valor: por * (TABELA[c.produto] - 0.12) }; });
-}
-const precoAcordado = (c) => ({ produto: c.produto, preco: TABELA[c.produto] - 0.12, cond: c.bi.limite >= 200000 ? "28 dias" : "14 dias" });
 const aVencer = (c) => ({ qtd: 2, valor: Math.round(c.bi.consumo * 3.05) });
 
 // ── Conversas = V3 de hoje, só as caixas dela ───────────────────────────────
@@ -21,7 +14,7 @@ function linhaConversa(v) {
     <div class="min-w-0 flex-1 overflow-hidden">
       <div class="flex flex-wrap items-center gap-1.5"><span class="truncate text-sm tracking-tight ${nl ? "font-bold text-gray-900 dark:text-white" : "font-semibold text-gray-800 dark:text-white/90"}">${esc(v.canal === "email" && v.assunto ? v.assunto : nome)}</span>
         ${v.desconhecido ? pill("número novo", COR.aviso) : c ? tipoPill(c) : ""}${v.fechada ? pill("fechada", COR.cinza) : ""}</div>
-      <p class="mt-0.5 truncate text-sm text-gray-700 dark:text-gray-300">${c ? `${esc(c.nome)} · ${esc(c.cidade)}` : `<span class="text-gray-400 dark:text-gray-500">sem empresa vinculada</span>`}</p>
+      <p class="mt-0.5 truncate text-sm text-gray-700 dark:text-gray-300">${c ? `${esc(c.nome)} · ${esc(c.cidade)}` : `<span class="text-gray-400 dark:text-gray-500">sem empresa</span>`}</p>
       <p class="mt-1 flex items-center gap-1 truncate text-xs ${nl ? "font-medium text-gray-900 dark:text-white" : "text-gray-600 opacity-70 dark:text-gray-300"}">
         ${ult.dir === "eu" ? `<span class="flex-shrink-0 text-blue-500 dark:text-blue-400">✓✓</span>` : ""}<span class="truncate"><span class="text-gray-400">"</span>${esc(ult.t)}<span class="text-gray-400">"</span></span>
         <span class="ml-1 flex-shrink-0 font-mono text-[11px] text-gray-400 dark:text-gray-500">${dm(v.dia)} ${v.hora}</span></p></div>
@@ -79,8 +72,8 @@ function erpCard(c) {
   const n = notasBI(c), p = precoAcordado(c), av = aVencer(c);
   return `<div class="space-y-3 pt-3 text-sm">
     <div class="${V.erp}"><div class="mb-2 flex items-center justify-between gap-2"><h4 class="${V.erp_h} mb-0">Compras (12 meses)</h4><button type="button" data-acao="mock" data-v="Notas e boletos: o modal da V3." class="${V.link}">Ver notas ›</button></div>
-      <dl class="grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs"><div><dt class="text-gray-400">Volume total</dt><dd class="font-medium text-gray-700 dark:text-gray-200">${litros(c.bi.l12)}</dd></div><div><dt class="text-gray-400">Nº compras</dt><dd class="font-medium text-gray-700 dark:text-gray-200">${Math.round(365 / c.bi.ciclo)}</dd></div>
-      <div><dt class="text-gray-400">${c.produto}</dt><dd class="font-medium text-gray-700 dark:text-gray-200">${litros(c.bi.l12)}</dd></div><div><dt class="text-gray-400">Última compra</dt><dd class="font-medium text-gray-700 dark:text-gray-200">${dm(c.bi.ultimo)} · há ${diasAtras(c.bi.ultimo)} d</dd></div></dl></div>
+      <dl class="grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs"><div><dt class="text-gray-400">Volume total</dt><dd class="font-medium text-gray-700 dark:text-gray-200">${litros(c.bi.l12)}</dd></div><div><dt class="text-gray-400">Nº compras</dt><dd class="font-medium text-gray-700 dark:text-gray-200">${c.bi.ciclo ? Math.round(365 / c.bi.ciclo) : c.bi.compras < 99 ? c.bi.compras : 9}</dd></div>
+      <div><dt class="text-gray-400">${c.produto}</dt><dd class="font-medium text-gray-700 dark:text-gray-200">${litros(c.bi.l12)}</dd></div><div><dt class="text-gray-400">Última compra</dt><dd class="font-medium text-gray-700 dark:text-gray-200">${c.bi.ultimo ? `${dm(c.bi.ultimo)} · há ${diasAtras(c.bi.ultimo)} d` : "—"}</dd></div></dl></div>
     ${c.bi.comodatoEquip.length ? `<div class="${V.erp}"><h4 class="${V.erp_h}">Comodato (${c.bi.comodatoEquip.length})</h4><ul class="space-y-1 text-xs">${c.bi.comodatoEquip.map((e) => `<li class="flex justify-between gap-2 text-gray-700 dark:text-gray-200"><span class="truncate">${esc(e)}</span><span class="flex-shrink-0 text-[11px] text-emerald-600 dark:text-emerald-400">Ativo</span></li>`).join("")}</ul></div>` : ""}
     <div class="${V.erp}"><h4 class="${V.erp_h}">Financeiro</h4><div class="grid grid-cols-2 gap-2">
       <div class="rounded-lg px-3 py-2 ${c.bi.titulos ? "bg-red-50 dark:bg-red-900/20" : "bg-gray-50 dark:bg-gray-700/40"}"><p class="text-[11px] ${c.bi.titulos ? "text-red-500 dark:text-red-400" : "text-gray-500 dark:text-gray-400"}">Vencido (${c.bi.titulos})</p><p class="font-semibold ${c.bi.titulos ? "text-red-700 dark:text-red-300" : "text-gray-700 dark:text-gray-200"}">${reais(c.bi.vencidos)}</p></div>
@@ -89,57 +82,50 @@ function erpCard(c) {
       <tbody><tr class="border-t border-gray-100 dark:border-gray-700"><td class="py-1 text-gray-700 dark:text-gray-200">Diesel ${p.produto}</td><td class="py-1 font-medium text-gray-800 dark:text-white">R$ ${p.preco.toFixed(4).replace(".", ",")}</td><td class="py-1 text-gray-500 dark:text-gray-400">${p.cond}</td></tr></tbody></table></div>
     <div class="${V.erp}"><h4 class="${V.erp_h}">Últimas notas</h4><ul class="space-y-1.5 text-xs">${n.map((x) => `<li class="flex items-center justify-between gap-2"><span class="text-gray-700 dark:text-gray-200">NF ${x.nf} · ${dm(x.d)} · ${litros(x.litros)}</span><span class="inline-flex shrink-0 divide-x divide-gray-300 overflow-hidden rounded-lg border border-gray-300 dark:divide-gray-700 dark:border-gray-700">${["Nota", "Boleto"].map((t) => `<button type="button" data-acao="mock" data-v="${t} da NF ${x.nf}: vai pro composer, como na V3." class="cursor-pointer px-2 py-0.5 text-[11px] font-medium text-gray-700 hover:bg-brand-50 dark:text-gray-300 dark:hover:bg-white/5">${t}</button>`).join("")}</span></li>`).join("")}</ul></div></div>`;
 }
-function interesse(c, denso = true) {
-  if (!c.neg) return "";
+function interesse(c) {
+  if (!c.litros) return "";
   return `<div class="rounded-xl border border-purple-200 bg-purple-50/60 p-3 dark:border-purple-500/30 dark:bg-purple-500/10"><p class="text-xs font-semibold uppercase tracking-wide text-purple-700 dark:text-purple-300">Interesse</p>
-    <p class="mt-1 ${denso ? "text-sm" : "text-base"} font-semibold text-gray-800 dark:text-white">${litros(c.neg.litros)}/mês · ${c.neg.produto}${c.neg.comodato ? " · comodato" : ""}</p>
-    <p class="text-xs text-gray-600 dark:text-gray-300">estimado ${reais(estimado(c))}/mês pela tabela (${c.neg.produto} R$ ${TABELA[c.neg.produto].toFixed(2).replace(".", ",")})</p></div>`;
+    <p class="mt-1 text-sm font-semibold text-gray-800 dark:text-white">${litros(c.litros)}/mês · ${c.produto}${c.comodato ? " · comodato" : ""}</p></div>`;
 }
-// Próximos (SPEC_V4 §8): os 3 próximos da agenda de hoje no topo da coluna direita; "Fechar e agendar retorno" põe o 1º em foco
+// Próximos (SPEC_V5 §6): os próximos dos blocos Prospects/Clientes/Em atraso de Hoje; "Fechar e agendar retorno" põe o 1º em destaque
 function blocoProximos(v) {
   if (sup()) return "";
-  const ag = agora(), lista = meus(S.contas).filter((c) => c.prox?.d === HOJE && (!c.prox.h || c.prox.h >= ag) && c.id !== v.conta).sort((a, b) => (a.prox.h || "99").localeCompare(b.prox.h || "99"));
+  const r = itensHoje(HOJE), lista = [...r.prospects, ...r.clientes, ...r.atraso].filter((c) => c.id !== v.conta).sort(ordemHora);
   const foco = S.proxFoco ? lista[0] : null;
-  const acao = (c) => { const cv = convAberta(c), prev = canalPrevisto(c);
-    if (prev === "telefone" && pessoaPrincipal(c)?.tel) return `<button type="button" data-acao="ligar" data-v="${c.id}" class="${foco?.id === c.id ? V.btn_primary : V.btn_secondary} px-2 py-1">${ic("fone", "h-3 w-3")}Ligar</button>${adiarDrop(c, `${V.btn_secondary} px-1.5 py-1" title="Adiar`, `${ic("relogio", "h-3.5 w-3.5")}<span class="sr-only">Adiar</span>`)}`;
-    if (cv) return `<a href="#/conversas/${cv.id}" class="${foco?.id === c.id ? V.btn_primary : V.btn_secondary} px-2 py-1">Abrir</a>`;
-    return waDrop(c, `${foco?.id === c.id ? V.btn_primary : V.btn_secondary} px-2 py-1`, "right-0", icWa("h-3 w-3")); };
-  const linhas = lista.slice(0, 3).map((c) => `<li class="flex min-w-0 items-center gap-2 rounded-lg px-2 py-1.5 ${foco?.id === c.id ? "bg-brand-50 ring-1 ring-brand-300 dark:bg-brand-500/10 dark:ring-brand-500/40" : ""}">
-    <span class="w-9 shrink-0 font-mono text-xs font-medium text-gray-700 dark:text-gray-200">${c.prox.h || "dia"}</span><span class="shrink-0 text-gray-400">${icCanal(canalPrevisto(c), "h-3 w-3")}</span>
-    <a href="#/clientes/${c.id}" class="min-w-0 flex-1 truncate text-xs font-medium text-gray-800 hover:text-brand-500 dark:text-white">${esc(c.nome)}</a><span class="flex shrink-0 items-center gap-1">${acao(c)}</span></li>`).join("");
-  return `<section class="px-4 py-3"><details ${S.proxFechado ? "" : "open"} data-prox="1"><summary class="flex cursor-pointer items-center justify-between gap-2"><span class="${V.section_title} mb-0">Próximos · ${lista.length} ${lista.length === 1 ? "restante" : "restantes"}</span><a href="#/vendas/agenda" class="${V.link}">Agenda ›</a></summary>
-    ${foco ? `<p class="mt-2 rounded-lg bg-brand-500 px-2.5 py-1.5 text-xs font-medium text-white">próximo: ${esc(foco.nome)} · ${canalPrevisto(foco) === "telefone" ? "Ligar" : "WhatsApp"}</p>` : ""}
-    ${linhas ? `<ul class="mt-2 space-y-0.5">${linhas}</ul>` : `<p class="mt-2 ${V.muted}">Nada mais marcado pra hoje.</p>`}</details></section>`;
+  const acao = (c) => { const prev = canalPrevisto(c), cls = `${foco?.id === c.id ? V.btn_primary : V.btn_secondary} px-2 py-1`;
+    return prev === "telefone" && pessoaPrincipal(c)?.tel ? `<button type="button" data-acao="ligar" data-v="${c.id}" class="${cls}">${ic("fone", "h-3 w-3")}Ligar</button>` : waDrop(c, cls, "right-0", icWa("h-3 w-3"), `wa:px:${c.id}`); };
+  const linhas = lista.slice(0, 4).map((c) => `<li class="flex min-w-0 items-center gap-2 rounded-lg px-2 py-1.5 ${foco?.id === c.id ? "bg-brand-50 ring-1 ring-brand-300 dark:bg-brand-500/10 dark:ring-brand-500/40" : ""}">
+    <span class="w-9 shrink-0 font-mono text-[11px] text-gray-500 dark:text-gray-400">${c.prox.h || ""}</span><span class="shrink-0 text-gray-400">${icCanal(canalPrevisto(c), "h-3 w-3")}</span>
+    <a href="#/fichas/${c.id}" title="${esc(c.prox.assunto)}" class="min-w-0 flex-1 truncate text-xs font-medium text-gray-800 hover:text-brand-500 dark:text-white">${esc(c.nome)}</a><span class="flex shrink-0 items-center gap-1">${acao(c)}</span></li>`).join("");
+  return `<section class="px-4 py-3"><details ${S.proxFechado ? "" : "open"} data-prox="1"><summary class="flex cursor-pointer items-center justify-between gap-2"><span class="${V.section_title} mb-0">Próximos · ${lista.length}</span><a href="#/vendas" class="${V.link}">Hoje ›</a></summary>
+    ${foco ? `<p class="mt-2 rounded-lg bg-brand-500 px-2.5 py-1.5 text-xs font-medium text-white">próximo: ${esc(foco.nome)}</p>` : ""}
+    ${linhas ? `<ul class="mt-2 space-y-0.5">${linhas}</ul>` : `<p class="mt-2 ${V.muted}">Nada mais pra hoje.</p>`}</details></section>`;
 }
 function colunaDireita(v) {
   const sec = (titulo, corpo, extra = "") => `<section class="px-4 py-4"><div class="flex items-center justify-between gap-2"><h4 class="${V.section_title}">${titulo}</h4>${extra}</div>${corpo}</section>`;
   if (v.desconhecido) return `<div class="flex min-h-0 flex-col overflow-y-auto ${UI.card}"><div class="divide-y divide-gray-100 dark:divide-gray-800">${blocoProximos(v)}
-    ${sec("Quem está do outro lado", `<p class="text-sm font-medium text-gray-800 dark:text-white">${esc(v.nome)}</p><p class="mt-1 ${V.muted}">Este número não está em nenhuma ficha sua. Diga quem é:</p>
-      <div class="mt-3 flex flex-col gap-2"><button type="button" data-acao="novo-lead" data-conv="${v.id}" class="${V.btn_primary} justify-center py-2">${ic("mais", "h-3.5 w-3.5")}Novo lead</button>
+    ${sec("Quem está do outro lado", `<p class="text-sm font-medium text-gray-800 dark:text-white">${esc(v.nome)}</p>
+      <div class="mt-3 flex flex-col gap-2"><button type="button" data-acao="novo-prospect" data-conv="${v.id}" class="${V.btn_primary} justify-center py-2">${ic("mais", "h-3.5 w-3.5")}Novo prospect</button>
       <button type="button" data-acao="vincular" data-v="${v.id}" class="${V.btn_secondary} justify-center py-2">Vincular a cliente</button>
       <button type="button" data-acao="ignorar" data-v="${v.id}" class="${V.btn_ghost} py-2 text-center">Ignorar</button></div>
-      <p class="mt-3 ${V.muted}">Novo lead já vem com a fonte "WhatsApp nº novo" e o telefone; o CNPJ puxa a Receita. Ele cai na caixa de entrada.</p>`)}</div></div>`;
+`)}</div></div>`;
   const c = conta(v.conta), p = c.pessoas.find((x) => x.nome === v.nome) || pessoaPrincipal(c);
   const quem = sec("Quem é", `<div class="flex items-start gap-3">${avatar(v.nome, "h-9 w-9 text-xs")}<div class="min-w-0 flex-1"><p class="flex flex-wrap items-center gap-1.5 text-sm font-medium text-gray-800 dark:text-white">${esc(v.nome)} ${papelPill(p)}</p>
-    <a href="#/clientes/${c.id}" class="block truncate text-xs text-gray-600 hover:text-brand-500 hover:underline dark:text-gray-300">${esc(c.nome)} · ${esc(c.cidade)}</a><div class="mt-1.5 flex flex-wrap gap-1.5">${tipoPill(c)}${c.segmento ? pill(esc(c.segmento), COR.cinza) : ""}</div></div></div>
+    <a href="#/fichas/${c.id}" class="block truncate text-xs text-gray-600 hover:text-brand-500 hover:underline dark:text-gray-300">${esc(c.nome)} · ${esc(c.cidade)}</a><div class="mt-1.5 flex flex-wrap gap-1.5">${tipoPill(c)}${c.segmento ? pill(esc(c.segmento), COR.cinza) : ""}</div></div></div>
     <dl class="mt-2"><div class="${V.dl_row}"><dt class="${V.dt}">${v.canal === "email" ? "E-mail" : "Telefone"}</dt><dd class="${V.dd} truncate">${esc(v.canal === "email" ? p?.email || "—" : p?.tel || v.nome)}</dd></div>
     <div class="${V.dl_row}"><dt class="${V.dt}">Prefere</dt><dd class="${V.dd}">${p?.prefere === "email" ? "E-mail" : p?.prefere === "telefone" ? "Telefone" : "WhatsApp"}</dd></div>${sup() ? `<div class="${V.dl_row}"><dt class="${V.dt}">Dona</dt><dd class="${V.dd}">${vend(c.dona).curto}</dd></div>` : ""}</dl>`);
   // contato agendado de hoje (ou atrasado) da empresa: "Fechar e agendar retorno" é o que conclui
-  const agHoje = c.prox && c.prox.d <= HOJE ? `<div class="mb-2 flex items-start gap-2 rounded-lg border ${c.prox.d < HOJE ? "border-error-200 bg-error-50 text-error-700 dark:border-error-500/30 dark:bg-error-500/10 dark:text-error-300" : "border-brand-200 bg-brand-25 text-brand-700 dark:border-brand-500/30 dark:bg-brand-500/10 dark:text-brand-200"} px-2.5 py-1.5 text-xs">${ic("cal", "h-3.5 w-3.5 mt-0.5")}<span>contato ${c.prox.d < HOJE ? `atrasado (${rotProx(c.prox)})` : `de hoje ${c.prox.h || ""}`} · <b>${esc(c.prox.assunto)}</b><span class="block opacity-75">"Fechar e agendar retorno" conclui</span></span></div>` : "";
-  const neg = sec("Negócio", agHoje + (naCaixa(c) ? `<p class="text-sm text-gray-700 dark:text-gray-200">Lead na <b>caixa de entrada</b> — ainda fora do funil.</p><p class="mt-1 ${V.muted}">A 1ª mensagem dela por aqui já põe no funil como Contatado (movido pela V3).</p>`
-    : c.neg ? `${pathEtapas(c, "h-7 text-xs", true)}${c.neg.mov ? `<p class="mt-1.5 text-[11px] ${c.neg.mov.por === "v3" ? "text-green-700 dark:text-emerald-300" : "text-gray-400"}">${ETAPA_NOME[c.neg.etapa]} · ${movTxt(c)}</p>` : ""}
-      <dl class="mt-2"><div class="${V.dl_row}"><dt class="${V.dt}">Volume</dt><dd class="${V.dd} font-medium">${litros(c.neg.litros)}/mês · ${c.neg.produto}${c.neg.comodato ? " · comodato" : ""}</dd></div>
-      <div class="${V.dl_row}"><dt class="${V.dt}">Próximo</dt><dd class="${V.dd}">${proxTxt(c)}</dd></div>${c.neg.previsao && aberto(c) ? `<div class="${V.dl_row}"><dt class="${V.dt}">Previsão</dt><dd class="${V.dd}">${rotData(c.neg.previsao)}</dd></div>` : ""}${c.neg.campanha ? `<div class="${V.dl_row}"><dt class="${V.dt}">Campanha</dt><dd class="${V.dd}">${esc(campanha(c.neg.campanha).nome)}</dd></div>` : ""}</dl>
-      ${sup() ? "" : `<button type="button" data-acao="resultado" data-conv="${v.id}" class="${V.btn_primary} mt-2 w-full justify-center py-2">Registrar resultado</button>`}`
-    : `<p class="${V.muted}">Sem negócio aberto.</p><dl class="mt-1"><div class="${V.dl_row}"><dt class="${V.dt}">Próximo</dt><dd class="${V.dd}">${proxTxt(c)}</dd></div></dl>
-      ${sup() ? "" : `<div class="mt-2 flex gap-2"><button type="button" data-acao="resultado" data-conv="${v.id}" class="${V.btn_primary} flex-1 justify-center py-2">Registrar resultado</button><button type="button" data-acao="abrir-negocio" data-v="${c.id}" class="${V.btn_secondary} justify-center py-2">${ic("mais", "h-3.5 w-3.5")}Negócio</button></div>`}`),
-    `<a href="#/clientes/${c.id}" class="${V.link}">Ficha ›</a>`);
+  const agHoje = c.prox && c.prox.d <= HOJE ? `<p class="mb-2 flex items-center gap-1.5 text-xs ${c.prox.d < HOJE ? "text-error-600 dark:text-error-400" : "text-brand-600 dark:text-brand-300"}">${ic("cal", "h-3.5 w-3.5")}contato ${c.prox.d < HOJE ? "atrasado" : "de hoje"}: ${esc(c.prox.assunto)}</p>` : "";
+  const neg = sec("Negócio", agHoje + `${ehProspect(c) || c.ctipo === "novo" ? pathV5(c, "h-7 text-xs", true) : `<p class="text-sm text-gray-700 dark:text-gray-200">Cliente ${CTIPO[c.ctipo].toLowerCase()}${c.sit ? ` · ${sitPill(c)}` : ""}</p>`}
+      <dl class="mt-2">${c.litros || c.bi ? `<div class="${V.dl_row}"><dt class="${V.dt}">Volume</dt><dd class="${V.dd}">${litros(litrosDe(c))}/mês · ${c.produto}</dd></div>` : ""}<div class="${V.dl_row}"><dt class="${V.dt}">Próximo</dt><dd class="${V.dd}">${proxCtl(c, "", "cv")}</dd></div></dl>
+      ${sup() ? "" : `<button type="button" data-acao="resultado" data-conv="${v.id}" class="${V.btn_primary} mt-2 w-full justify-center py-2">Registrar resultado</button>`}`,
+    `<a href="#/fichas/${c.id}" class="${V.link}">Ficha ›</a>`);
   const erp = c.tipo === "cliente"
     ? `<section class="px-4 py-4"><details ${S.erpAberto ? "open" : ""} data-erp="1"><summary class="flex cursor-pointer items-center justify-between gap-2"><span class="${V.section_title} mb-0">Ficha do ERP</span><span class="text-gray-400">${ic("baixo", "h-4 w-4")}</span></summary>${erpCard(c)}</details></section>`
-    : `<section class="space-y-3 px-4 py-4">${interesse(c)}<details><summary class="flex cursor-pointer items-center justify-between gap-2"><span class="${V.section_title} mb-0">Ficha do ERP</span><span class="text-xs text-gray-400">ainda não está no GESCOR ▾</span></summary><p class="pt-2 ${V.muted}">Quando virar cliente no GESCOR, aqui aparece o card do ERP (compras, comodato, financeiro, preço, notas) — igual à V3.</p></details></section>`;
-  const acoes = sec("Ações", `<div class="flex flex-wrap gap-1.5">${[["Anotar pedido", "pedidos"], ["Proposta", "propostas"], ["Pedir crédito", "credito"]].map(([r, m]) => `<button type="button" data-acao="modulo" data-v="${m}" data-conta="${c.id}" class="${V.btn_secondary}">${r}</button>`).join("")}<a href="#/clientes/${c.id}" class="${V.btn_secondary}">Ficha completa</a></div>`);
+    : interesse(c) ? `<section class="px-4 py-4">${interesse(c)}</section>` : "";
+  const acoes = sec("Ações", `<div class="flex flex-wrap gap-1.5">${[["Anotar pedido", "pedidos"], ["Proposta", "propostas"], ["Pedir crédito", "credito"]].map(([r, m]) => `<button type="button" data-acao="modulo" data-v="${m}" data-conta="${c.id}" class="${V.btn_secondary}">${r}</button>`).join("")}<a href="#/fichas/${c.id}" class="${V.btn_secondary}">Ficha completa</a></div>`);
   const evs = c.eventos.filter((e) => !e.sistema).slice(0, 3);
-  const ativ = sec("Atividade", evs.length ? `<ul class="space-y-2.5">${evs.map((e) => eventoHtml(e, c, true)).join("")}</ul>` : `<p class="${V.muted}">Nenhum contato ainda.</p>`, `<a href="#/clientes/${c.id}" class="${V.link}">ver tudo ›</a>`);
+  const ativ = sec("Atividade", evs.length ? `<ul class="space-y-2.5">${evs.map((e) => eventoHtml(e, c, true)).join("")}</ul>` : `<p class="${V.muted}">Nenhum contato ainda.</p>`, `<a href="#/fichas/${c.id}" class="${V.link}">ver tudo ›</a>`);
   return `<div class="flex min-h-0 flex-col overflow-y-auto ${UI.card}"><div class="divide-y divide-gray-100 dark:divide-gray-800">${blocoProximos(v)}${quem}${neg}${erp}${acoes}${ativ}</div></div>`;
 }
 function telaConversa(id) {

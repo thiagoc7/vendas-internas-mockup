@@ -1,4 +1,4 @@
-// Mockup Vendas Internas v4 (rodada 2026-10-21, noite) — barra Vendas · Conversas; Vendas = Resumo · Agenda · Leads · Clientes (v4.1). Estrutura = ../SPEC_V4.md (manda sobre a SPEC_V3).
+// Mockup Vendas Internas v5 (22/10/2026) — barra Vendas · Conversas; Vendas = Hoje · Prospects · Clientes (+ Equipe e ⚙ Prazos pro supervisor). Estrutura = ../SPEC_V5.md (manda sobre tudo).
 // Visual: casca/tokens da V3 (app/helpers/whatsapp/v3/atendimento_helper.rb UI) + blocos da dash do CRM PWA (crm/dashboard/_*).
 // Nada é salvo: tudo vive em memória (S); F5 ou "recomeçar" volta ao início.
 
@@ -80,6 +80,7 @@ const IC = {
   ocultar: "M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88",
   cima: "M4.5 15.75l7.5-7.5 7.5 7.5",
   pontos: "M6.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM12.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM18.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0z",
+  engrenagem: "M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 010 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 010-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28z M15 12a3 3 0 11-6 0 3 3 0 016 0z",
   info: "M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z",
 };
 const ic = (k, css = "h-5 w-5") => `<svg class="${css} flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="${IC[k]}"/></svg>`;
@@ -125,78 +126,14 @@ const conversa = (id) => S.conv.find((c) => c.id === Number(id));
 // quem está no escopo da tela: a vendedora logada, ou (supervisor) a escolhida no seletor / todas
 const escopo = () => sup() ? (S.sel ? [S.sel] : VENDEDORAS.map((v) => v.id)) : [S.como];
 const meus = (lista) => lista.filter((x) => escopo().includes(x.dona));
-// Etapas v4 do negócio: Novo → Contatado → Qualificado → Proposta → Ganho | Perdido. "Cliente" não é etapa: é o chip do GESCOR.
-const ETAPAS = [["novo", "Novo"], ["contatado", "Contatado"], ["qualificado", "Qualificado"], ["proposta", "Proposta"], ["ganho", "Ganho"]];
-const ETAPA_NOME = { caixa: "Caixa de entrada", novo: "Novo", contatado: "Contatado", qualificado: "Qualificado", proposta: "Proposta", ganho: "Ganho", perdido: "Perdido" };
-const RANK = { novo: 0, contatado: 1, qualificado: 2, proposta: 3, ganho: 4 };
-const aberto = (c) => !!c.neg && RANK[c.neg.etapa] != null && c.neg.etapa !== "ganho";
-const FONTES = { lista: "Lista", linkedin: "LinkedIn", indicacao: "Indicação", site: "Site", whatsapp_numero_novo: "WhatsApp nº novo", outra: "Outra" };
 const MESES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 const mesTxt = (ym) => ym ? `${MESES[Number(ym.slice(5, 7)) - 1]}/${ym.slice(2, 4)}` : "";
-const ehLead = (c) => c.tipo === "prospect" || !!c.eraLead;
-const fonteDe = (c) => c.tipo === "prospect" ? c.fonte : c.eraLead?.fonte || null;
-// "Lista Carapicuíba" · "Indicação (Marcelo)" · "LinkedIn" · cliente sem campanha = "Carteira"
-function fonteTxt(c) {
-  const k = campanha(c.neg?.campanha || c.eraLead?.campanha), f = fonteDe(c);
-  if (!f && !k) return "Carteira";
-  const base = k ? k.nome : FONTES[f];
-  return c.fonteDet && !(k && k.id === "lc") ? `${base} <span class="text-gray-400">(${esc(c.fonteDet)})</span>` : base;
-}
-// Caixa de entrada (SPEC_V4 §12): lead que nasceu e ainda não entrou no funil (sem etapa). Agendar contato → Novo.
-const naCaixa = (c) => c.neg?.etapa === "caixa";
-const preQualificado = (c) => naCaixa(c) && c.cls?.vale === "sim" && c.neg.litros > 0;
-// Fases andam sozinhas unidas à V3; a linha/ficha mostra quem moveu (ela · V3 · proposta · pedido · GESCOR) e quando.
-const POR = { ela: "ela", v3: "V3", proposta: "proposta", pedido: "pedido", gescor: "GESCOR", importacao: "importação" };
-function moverEtapa(c, etapa, por, extra = "") {
-  if (!c.neg || c.neg.etapa === etapa) return false;
-  c.neg.etapa = etapa; c.neg.mov = { por, d: HOJE, h: agora() };
-  if (etapa === "ganho") c.neg.ganhoEm = HOJE;
-  c.eventos.unshift({ d: HOJE, h: agora(), sistema: `Etapa → ${ETAPA_NOME[etapa]} · ${POR[por]}${extra ? " · " + extra : ""}`, mov: por });
-  return true;
-}
-const movTxt = (c) => { const m = c.neg?.mov; if (!m) return ""; return `${m.por === "ela" ? "movido por ela" : `movido ${m.por === "v3" ? "pela" : "pelo"} ${POR[m.por]}`} · ${rotData(m.d)}${m.d === HOJE && m.h ? " " + m.h : ""}`; };
-const movPill = (c) => c.neg?.mov && c.neg.mov.por !== "ela" ? pill(`movido ${c.neg.mov.por === "v3" ? "pela" : "pelo"} ${POR[c.neg.mov.por]}`, c.neg.mov.por === "v3" ? "bg-green-50 text-green-700 dark:bg-emerald-900/30 dark:text-emerald-300" : COR.cinza) : "";
-const ganhoRecente = (c) => c.neg?.etapa === "ganho" && c.neg.ganhoEm && diasAtras(c.neg.ganhoEm) <= 7;
-const noFunilHa = (c) => { const ev = [...c.eventos].reverse()[0]; return ev ? diasAtras(ev.d) : 0; };
-// situação do próximo contato: atrasado | hoje | futuro | sem (negócio aberto sem data) | null
-// ticket aberto na caixa dela (WhatsApp/e-mail) = o lembrete de "mandei e não responderam" (SPEC_V3 §4)
 const convAberta = (c) => S.conv.find((v) => v.conta === c.id && !v.fechada);
-// importado e nunca contatado: não cobra "sem próximo" (mora em Clientes › campanha › Sem contato)
-const semContato = (c) => aberto(c) && c.neg.etapa === "novo" && !c.eventos.some((e) => !e.sistema);
-// Qualificado "quando precisar": a previsão de necessidade faz as vezes do próximo (volta como sugestão quando o mês chega)
-const previsaoChegou = (c) => aberto(c) && c.neg.etapa === "qualificado" && c.neg.previsaoNec && c.neg.previsaoNec <= HOJE.slice(0, 7);
-function situacao(c) {
-  if (c.prox) return c.prox.d < HOJE ? "atrasado" : c.prox.d === HOJE ? "hoje" : "futuro";
-  if (!aberto(c)) return null;
-  if (semContato(c)) return "novo";
-  if (c.neg.etapa === "qualificado" && c.neg.previsaoNec) return "previsao";
-  if (convAberta(c)) return "ticket";
-  return "sem";
-}
-const funil = (c) => c.neg ? c.neg.etapa : null;
 const campanha = (id) => id ? (S?.camps || CAMPANHAS).find((x) => x.id === id) : null;
-// recompra (Oportunidades do BI): pronto | esfriando | inativo | null (em dia)
-function recompra(c) {
-  if (c.tipo !== "cliente") return null;
-  const dias = diasAtras(c.bi.ultimo), r = dias / c.bi.ciclo;
-  return dias > 60 ? "inativo" : r > 1.5 ? "esfriando" : r >= 0.85 ? "pronto" : null;
-}
-const ordemProx = (a, b) => { const r = { atrasado: 0, hoje: 1, sem: 2, futuro: 3, previsao: 4, ticket: 5, novo: 6 }; const sa = situacao(a), sb = situacao(b);
-  if ((r[sa] ?? 9) !== (r[sb] ?? 9)) return (r[sa] ?? 9) - (r[sb] ?? 9);
-  return ((a.prox?.d || "") + (a.prox?.h || "99")).localeCompare((b.prox?.d || "") + (b.prox?.h || "99")); };
-const ultimoEv = (c) => c.eventos.find((e) => !e.sistema && e.res);
 const ultimoContato = (c) => c.eventos.find((e) => !e.sistema);
-// proposta aguardando há 3+ dias: a última fala é dela
-const propostaSemResposta = (c) => { const u = ultimoContato(c); return aberto(c) && c.neg.etapa === "proposta" && u?.dir === "eu" && diasAtras(u.d) >= 3; };
 const convDaConta = (c) => S.conv.filter((v) => v.conta === c.id).sort((a, b) => (b.dia + b.hora).localeCompare(a.dia + a.hora));
 const pessoaPrincipal = (c) => c.pessoas.find((p) => p.principal) || c.pessoas[0];
-const estimado = (c) => c.neg ? c.neg.litros * TABELA[c.neg.produto] : 0;
-const litrosDe = (c) => c.neg ? c.neg.litros : c.bi?.consumo || 0;
-const passouCiclo = (c) => c.tipo === "cliente" && diasAtras(c.bi.ultimo) > c.bi.ciclo * 2;
-const comodatoSemCompra = (c) => c.tipo === "cliente" && c.bi.tanques > 0 && diasAtras(c.bi.ultimo) > 21;
 const naoLidasTotal = () => meus(S.conv).reduce((a, v) => a + (v.fechada ? 0 : v.naoLidas), 0);
-const contatosSemana = (dona) => { const evs = S.contas.filter((c) => c.dona === dona).flatMap((c) => c.eventos.filter((e) => !e.sistema && e.d >= SEG_SEMANA));
-  return { total: evs.length, auto: evs.filter((e) => e.auto).length, manual: evs.filter((e) => !e.auto).length }; };
 
 // ── Pílulas e textos ────────────────────────────────────────────────────────
 const pill = (txt, cor) => `<span class="inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ${cor}">${txt}</span>`;
@@ -210,29 +147,9 @@ const COR = {
   roxo: "bg-purple-50 text-purple-700 dark:bg-purple-500/10 dark:text-purple-300",
 };
 const produtoPill = (p) => pill(p, p === "S10" ? COR.brand : COR.ok);
-// chip do registro: Lead | Cliente | Aguardando GESCOR (lead ganho que ainda não apareceu no BI)
-const tipoPill = (c) => c.tipo === "cliente" ? pill("Cliente", COR.ambar) : c.neg?.etapa === "ganho" ? pill("Aguardando GESCOR", COR.aviso) : pill("Lead", COR.roxo);
-const COR_ETAPA = { caixa: "bg-white text-gray-600 ring-1 ring-gray-300 dark:bg-transparent dark:text-gray-300 dark:ring-gray-600", novo: COR.cinza, contatado: "bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-300", qualificado: COR.roxo, proposta: COR.brand, ganho: COR.ok, perdido: COR.erro };
-const etapaPill = (c) => c.neg ? pill(ETAPA_NOME[c.neg.etapa], COR_ETAPA[c.neg.etapa]) : "";
 const CANAL = { whatsapp: { nome: "WhatsApp", ic: "chat" }, email: { nome: "E-mail", ic: "mail" }, telefone: { nome: "Telefone", ic: "fone" }, reuniao: { nome: "Reunião", ic: "users" }, outro: { nome: "Outro", ic: "doc" } };
 const DIR = { eu: "eu falei", cliente: "cliente falou" };
-// resultado do contato → etapa (não atendeu não move · conversou → Contatado · liga depois → Qualificado · pediu proposta → Proposta · fechou → Ganho · recusou → Perdido)
-const RES = { sem_resposta: ["Não atendeu", COR.cinza], conversou: ["Conversou", COR.brand], qualificado: ["Compra diesel, liga depois", COR.roxo], pediu_proposta: ["Pediu proposta", COR.roxo], fechou: ["Fechou", COR.ok], recusou: ["Recusou", COR.erro] };
-const RES_ETAPA = { conversou: "contatado", qualificado: "qualificado", pediu_proposta: "proposta", fechou: "ganho", recusou: "perdido" };
-const ETAPA_RES = { contatado: "conversou", qualificado: "qualificado", proposta: "pediu_proposta", ganho: "fechou" };
-const MOTIVOS = ["Preço", "Prazo / condição", "Ficou com o atual", "Sem demanda", "Crédito negado", "Outro"];
 const PAPEL = { principal: "principal", decisor: "decisor", compras: "compras", financeiro: "financeiro", operacional: "operacional" };
-const resRot = (e) => e.res === "sem_resposta" && (e.canal === "whatsapp" || e.canal === "email") ? "Sem resposta" : RES[e.res][0];
-function proxTxt(c, curto = false) {
-  const s = situacao(c);
-  if (s === "novo") return `<span class="text-gray-400">sem contato ainda</span>`;
-  if (s === "ticket") return `<span class="text-gray-500 dark:text-gray-400">conversa aberta</span>`;
-  if (s === "previsao") return `<span class="${previsaoChegou(c) ? "font-medium text-purple-700 dark:text-purple-300" : "text-gray-600 dark:text-gray-400"}">quando precisar ~${mesTxt(c.neg.previsaoNec)}</span>`;
-  if (s === "sem") return `<span class="inline-flex items-center gap-1 font-medium text-warning-600 dark:text-warning-400">${ic("alerta", "h-4 w-4")}sem próximo</span>`;
-  if (!s) return `<span class="text-gray-400">—</span>`;
-  const cor = s === "atrasado" ? "font-medium text-error-600 dark:text-error-400" : s === "hoje" ? "font-medium text-gray-800 dark:text-white" : "text-gray-600 dark:text-gray-400";
-  return `<span class="${cor}">${rotProx(c.prox)}</span>${curto ? "" : `<span class="block text-xs text-gray-400">${esc(c.prox.assunto)}</span>`}`;
-}
 const iniciais = (nome) => esc(nome.replace(/^\+\d+\s*/, "").split(" ").filter(Boolean).slice(0, 2).map((p) => p[0]).join("").toUpperCase() || "?");
 const avatar = (nome, css = "h-8 w-8 text-xs") => `<span class="flex ${css} flex-shrink-0 items-center justify-center rounded-full bg-brand-50 font-semibold text-brand-600 dark:bg-brand-500/15 dark:text-brand-300">${iniciais(nome)}</span>`;
 const donaTxt = (id) => `<span class="inline-flex items-center gap-2">${avatar(vend(id).nome, "h-6 w-6 text-[0.625rem]")}${vend(id).curto}</span>`;
@@ -242,25 +159,7 @@ const chipF = (on, acao, v, rot, n, extra = "") => `<button type="button" data-a
 const segV3 = (opcoes, atual, acao) => `<div class="${V.segment}">${opcoes.map(([v, rot]) => `<button type="button" data-acao="${acao}" data-v="${v}" class="${atual === v ? V.segment_on : V.segment_off}">${rot}</button>`).join("")}</div>`;
 const verTodos = (bloco, total, mostrando) => total > mostrando || S.exp[bloco] ? `<button type="button" data-acao="expandir" data-v="${bloco}" class="w-full border-t border-gray-100 px-4 py-2.5 text-center text-xs font-medium text-brand-500 hover:bg-gray-50 dark:border-gray-800 dark:text-brand-400 dark:hover:bg-white/[0.03]">${S.exp[bloco] ? "mostrar menos" : `ver todos (${total})`}</button>` : "";
 const corta = (bloco, lista, n) => S.exp[bloco] ? lista : lista.slice(0, n);
-
-// Path (Novo ▸ Contatado ▸ Qualificado ▸ Proposta ▸ Ganho | Perdido) — o chevron do Salesforce. Clique numa etapa adiantada pede o resultado.
 const CHEV = ["polygon(0 0,calc(100% - 10px) 0,100% 50%,calc(100% - 10px) 100%,0 100%)", "polygon(0 0,calc(100% - 10px) 0,100% 50%,calc(100% - 10px) 100%,0 100%,10px 50%)", "polygon(0 0,100% 0,100% 100%,0 100%,10px 50%)"];
-const CURTO = { novo: "Novo", contatado: "Cont.", qualificado: "Qualif.", proposta: "Prop.", ganho: "Ganho" };
-function pathEtapas(c, alto = "h-9 text-xs 2xl:text-sm", compacto = false) {
-  const e = c.neg?.etapa, perd = e === "perdido", idx = perd ? -1 : RANK[e] ?? -1, clicavel = !compacto && !sup() && aberto(c);
-  const passos = ETAPAS.map(([k, r], i) => {
-    const feito = i < idx || (k === "ganho" && idx === 4), atual = i === idx;
-    const cor = !c.neg || perd ? "bg-gray-100 text-gray-400 dark:bg-white/5 dark:text-gray-500"
-      : feito ? "bg-brand-500 text-white" : atual ? "bg-brand-100 text-brand-700 dark:bg-brand-500/25 dark:text-brand-200" : "bg-gray-100 text-gray-500 dark:bg-white/5 dark:text-gray-400";
-    const forma = CHEV[i === 0 ? 0 : i === 4 ? 2 : 1], pode = clicavel && i > idx;
-    const tag = pode ? `button type="button" data-acao="path" data-v="${c.id}|${k}" title="Avançar pra ${r}"` : "div";
-    return `<${tag} class="flex ${alto} min-w-0 flex-1 items-center justify-center gap-1 font-medium ${cor} ${i ? "-ml-1.5" : ""} ${pode ? "cursor-pointer hover:bg-brand-50 hover:text-brand-600 dark:hover:bg-brand-500/15" : ""}" style="clip-path:${forma}">${feito ? ic("check", "h-3.5 w-3.5") : ""}<span class="truncate">${compacto ? CURTO[k] : k === "qualificado" ? `<span class="hidden 2xl:inline">Qualificado</span><span class="2xl:hidden">Qualif.</span>` : k === "contatado" ? `<span class="hidden 2xl:inline">Contatado</span><span class="2xl:hidden">Contat.</span>` : r}</span></${pode ? "button" : "div"}>`;
-  }).join("");
-  const perdido = compacto ? (perd ? `<span class="ml-1.5 flex ${alto} shrink-0 items-center rounded-md bg-error-500 px-2 font-medium text-white">Perdido</span>` : "")
-    : perd ? `<span class="ml-2 flex ${alto} shrink-0 items-center rounded-lg bg-error-500 px-3 font-medium text-white">Perdido</span>`
-    : clicavel ? `<button type="button" data-acao="perder" data-v="${c.id}" class="ml-2 flex ${alto} shrink-0 items-center rounded-lg border border-error-300 px-3 font-medium text-error-600 hover:bg-error-50 dark:border-error-500/40 dark:text-error-400 dark:hover:bg-error-500/10">Perdido</button>` : "";
-  return `<div class="flex w-full items-center"><div class="flex min-w-0 flex-1">${passos}</div>${perdido}</div>`;
-}
 
 // ── Atividade (linha do tempo) ──────────────────────────────────────────────
 function eventoHtml(e, c, compacto = false) {
@@ -290,31 +189,6 @@ function atividade(c) {
   return dias.length ? `<div class="space-y-5">${dias.map((d) => `<div><p class="mb-2 ${UI.secao}">${rotData(d)}${["hoje", "ontem"].includes(rotData(d)) ? ` · ${dm(d)}` : ""}</p>
     <ul class="space-y-3">${grupos[d].sort((a, b) => (b.h || "").localeCompare(a.h || "")).map((e) => eventoHtml(e, c)).join("")}</ul></div>`).join("")}</div>` : `<p class="${UI.muted}">Nenhum contato ainda.</p>`;
 }
-// cartão do próximo contato (fixado)
-function cartaoProximo(c, denso = false) {
-  const s = situacao(c), pad = denso ? "p-3" : "p-4";
-  if (s === "novo") return `<div class="rounded-xl border border-gray-200 ${pad} dark:border-gray-800"><p class="${UI.secao}">Próximo contato</p><p class="mt-1 text-sm text-gray-700 dark:text-gray-200">Ainda sem 1º contato${c.neg.campanha ? ` · ${esc(campanha(c.neg.campanha).nome)}` : ""}.</p>
-    <p class="mt-1 ${V.muted}">Lead importado: fica em Leads › Caixa de entrada e aparece em Ações sugeridas (Prospecção).</p>${sup() ? "" : `<button type="button" data-acao="agendar" data-v="${c.id}" class="mt-2 ${UI.btnSm}">${ic("cal", "h-3.5 w-3.5")}Agendar 1º contato</button>`}</div>`;
-  if (s === "previsao") return `<div class="rounded-xl border border-purple-200 bg-purple-50/60 ${pad} dark:border-purple-500/30 dark:bg-purple-500/10"><p class="${UI.secao}">Próximo contato</p>
-    <p class="mt-1 text-base font-semibold text-gray-800 dark:text-white">quando precisar · ~${mesTxt(c.neg.previsaoNec)}</p><p class="mt-0.5 text-xs text-gray-600 dark:text-gray-300">Qualificado sem data: volta em Ações sugeridas quando a previsão chegar.</p>
-    ${sup() ? "" : `<button type="button" data-acao="agendar" data-v="${c.id}" class="mt-2 ${UI.btnSm}">${ic("cal", "h-3.5 w-3.5")}Agendar uma data</button>`}</div>`;
-  if (s === "ticket") { const v = convAberta(c); return `<div class="rounded-xl border border-gray-200 ${pad} dark:border-gray-800"><p class="${UI.secao}">Próximo contato</p><p class="mt-1 text-sm text-gray-700 dark:text-gray-200">Conversa aberta na Central — o ticket é o lembrete.</p>
-    <div class="mt-2 flex gap-2"><a href="#/conversas/${v.id}" class="${UI.btnSm}">Abrir conversa</a>${sup() ? "" : `<button type="button" data-acao="agendar" data-v="${c.id}" class="${UI.btnSm}">Agendar</button>`}</div></div>`; }
-  if (s === "sem") return `<div class="rounded-xl border border-warning-200 bg-warning-50 ${pad} dark:border-warning-500/30 dark:bg-warning-500/10">
-    <p class="flex items-center gap-2 text-sm font-semibold text-warning-800 dark:text-warning-300">${ic("alerta", "h-4 w-4")}Sem próximo contato</p>
-    <p class="mt-1 text-xs text-warning-700 dark:text-warning-400">Negócio aberto precisa de uma data pra voltar.</p>
-    <button type="button" data-acao="agendar" data-v="${c.id}" class="mt-3 ${UI.btnPSm}">${ic("cal", "h-3.5 w-3.5")}Agendar</button></div>`;
-  if (!c.prox) return `<div class="rounded-xl border border-gray-200 ${pad} dark:border-gray-800"><p class="${UI.secao}">Próximo contato</p><p class="mt-1 ${UI.muted}">Nenhum agendado.</p>
-    <button type="button" data-acao="agendar" data-v="${c.id}" class="mt-2 ${UI.btnSm}">${ic("cal", "h-3.5 w-3.5")}Agendar</button></div>`;
-  const atr = s === "atrasado";
-  return `<div class="rounded-xl border ${pad} ${atr ? "border-error-200 bg-error-50 dark:border-error-500/30 dark:bg-error-500/10" : "border-brand-200 bg-brand-25 dark:border-brand-500/30 dark:bg-brand-500/10"}">
-    <p class="${UI.secao}">Próximo contato${atr ? ` · <span class="text-error-600 dark:text-error-400">atrasado ${diasAtras(c.prox.d)} d</span>` : ""}</p>
-    <p class="mt-1 text-base font-semibold ${atr ? "text-error-700 dark:text-error-300" : "text-gray-800 dark:text-white"}">${rotProx(c.prox)}</p>
-    <p class="text-sm text-gray-600 dark:text-gray-300">${esc(c.prox.assunto)}</p>
-    <p class="mt-1 flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">${icCanal(canalPrevisto(c), "h-3.5 w-3.5")}previsto: ${CANAL[canalPrevisto(c)].nome}</p>
-    ${sup() ? "" : `<div class="mt-3 flex gap-2"><button type="button" data-acao="registrar" data-v="${c.id}" class="${UI.btnPSm}">Registrar</button>
-    <button type="button" data-acao="agendar" data-v="${c.id}" class="${UI.btnSm}">Reagendar</button></div>`}</div>`;
-}
 
 // ── Casca: sidebar (a do admin, com o menu de Vendas Internas) + header ─────
 function itemMenu(nome, icone, ativo, rota, badge = 0) {
@@ -324,7 +198,7 @@ function itemMenu(nome, icone, ativo, rota, badge = 0) {
 }
 function sidebar() {
   const t = S.tela;
-  const itens = itemMenu("Vendas", "grafico", t === "vendas" || t === "cliente", "vendas") + itemMenu("Conversas", "chat", t === "conversas" || t === "conversa", "conversas", naoLidasTotal());
+  const itens = itemMenu("Vendas", "grafico", t === "vendas" || t === "ficha" || t === "equipe" || t === "prazos", "vendas") + itemMenu("Conversas", "chat", t === "conversas" || t === "conversa", "conversas", naoLidasTotal());
   return `<aside class="fixed left-0 z-[9999] flex w-[290px] flex-col overflow-y-hidden border-r border-gray-200 bg-white px-5 transition-transform duration-200 dark:border-gray-800 dark:bg-gray-900 ${S.menu ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0" style="top:var(--barra,0px);height:calc(100dvh - var(--barra,0px))">
     <div class="flex items-center justify-between gap-2 pb-7 pt-8">
       <span class="flex items-center gap-3"><svg class="h-8 w-8 flex-shrink-0 text-brand-500" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg><span class="whitespace-nowrap text-xl font-bold text-gray-800 dark:text-white">Diesel BI</span></span>
@@ -333,12 +207,10 @@ function sidebar() {
     <nav class="no-scrollbar flex flex-col overflow-y-auto pb-8">
       <h3 class="mb-4 text-xs font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500">Vendas Internas</h3>
       <ul class="mb-6 flex flex-col gap-1">${itens}</ul>
-      ${sup() ? `<h3 class="mb-4 text-xs font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500">Supervisor</h3><ul class="mb-6 flex flex-col gap-1">${itemMenu("Equipe", "users", t === "equipe", "equipe")}</ul>` : ""}
-      <p class="px-3 text-xs leading-5 text-gray-400 dark:text-gray-500">O resto do menu do app (BI, Documentos, Crédito…) segue igual embaixo. A Central V3 das operadoras não muda.</p>
     </nav></aside>
     <div data-acao="menu" class="fixed inset-0 z-[9998] bg-gray-900/50 lg:hidden ${S.menu ? "" : "hidden"}"></div>`;
 }
-const NOME_TELA = { vendas: "Vendas", conversas: "Conversas", conversa: "Conversas", cliente: "Vendas", equipe: "Equipe" };
+const NOME_TELA = { vendas: "Vendas", conversas: "Conversas", conversa: "Conversas", ficha: "Vendas", equipe: "Vendas", prazos: "Vendas" };
 function header() {
   const quem = sup() ? SUPERVISOR.nome : vend(S.como).nome;
   return `<header class="sticky top-0 z-[999] flex w-full flex-col border-b border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
@@ -355,13 +227,10 @@ const tituloPagina = (t, sub = "", botoes = "") => `<div class="mb-5 flex flex-w
 const seletorVendedora = () => sup() ? segV3([["", "Todas"], ...VENDEDORAS.map((v) => [v.id, v.curto])], S.sel, "sel") : "";
 
 // ── Entrar em contato: botões por canal (Meu dia, ficha, Clientes) ─────────
-const canalPrevisto = (c) => c.prox?.canal || ({ email: "email", telefone: "telefone" }[pessoaPrincipal(c)?.prefere] || "whatsapp");
-const waLink = (tel) => `https://web.whatsapp.com/send?phone=55${soDig(tel)}`;
 // menu suspenso (um aberto por vez: S.drop)
 function drop(chave, rotulo, css, itens, lado = "right-0", seta = true, wrap = "relative inline-flex") {
   return `<div class="${wrap}" data-drop="${chave}"><button type="button" data-acao="drop" data-v="${chave}" aria-expanded="${S.drop === chave}" class="${css}">${rotulo}${seta ? ic("baixo", "h-3 w-3") : ""}</button>
     ${S.drop === chave ? `<div class="absolute ${lado} top-full z-50 mt-1 w-56 overflow-hidden rounded-lg border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-800">${itens.map(([acao, v, txt, sub]) => acao === "-" ? `<p class="mt-1 border-t border-gray-100 px-3 pb-1 pt-2 text-[11px] font-medium uppercase tracking-wide text-gray-400 dark:border-gray-700">${txt}</p>` :
       `<button type="button" data-acao="${acao}" data-v="${v}" class="block w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-white/5">${txt}${sub ? `<span class="block text-xs text-gray-400">${sub}</span>` : ""}</button>`).join("")}</div>` : ""}</div>`;
 }
-const waDrop = (c, css, lado, rot = `${icWa("h-3.5 w-3.5")}WhatsApp`) => drop(`wa:${c.id}`, rot, css, [["wa-central", c.id, "na Central", "abre a conversa dela na V3"], ["wa-web", c.id, "no WhatsApp Web", "manda pelo chip dela · entra na Atividade"]], lado);
-const adiarDrop = (c, css, rot = "Adiar") => drop(`adiar:${c.id}`, rot, css, [["adiar", `${c.id}|amanha`, `amanhã <span class="text-xs text-gray-400">${diaCurto(AMANHA())}</span>`], ["adiar", `${c.id}|3du`, `+3 dias úteis <span class="text-xs text-gray-400">${diaCurto(MAIS3())}</span>`], ["adiar", `${c.id}|data`, "escolher data…"]]);
+const waDrop = (c, css, lado = "right-0", rot = `${icWa("h-3.5 w-3.5")}WhatsApp`, chave = `wa:${c.id}`, seta = true) => drop(chave, rot, css, [["wa-central", c.id, "na Central", "abre a conversa dela na V3"], ["wa-web", c.id, "no WhatsApp Web", "manda pelo chip dela · entra na Atividade"]], lado, seta);
