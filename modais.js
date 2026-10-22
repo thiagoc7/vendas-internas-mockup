@@ -251,6 +251,20 @@ function modalDescartar(m) {
   const c = conta(m.id);
   return casca("Descartar lead", esc(c.nome), `<div class="space-y-3"><div><label class="${UI.rotulo}" for="d-motivo">Motivo <span class="text-error-500">*</span></label>
     <select id="d-motivo" data-m="motivo" class="${UI.campo} ${m.erro ? "border-error-400" : ""}"><option value="">Escolha…</option>${MOTIVOS_DESC.map((o) => `<option ${m.motivo === o ? "selected" : ""}>${o}</option>`).join("")}</select>${erroTxt(m.erro && "Escolha o motivo.")}</div>
-    <p class="text-xs text-gray-400">Sai da caixa de entrada e vai pro Arquivo do Funil (dá pra reabrir pela ficha).</p></div>`,
+    <p class="text-xs text-gray-400">Sai da caixa de entrada e vai pro Arquivo de Leads (dá pra reabrir pela ficha).</p></div>`,
     `${cancelar}<button type="button" data-acao="salvar-descartar" class="${UI.btnPerigo}">Descartar</button>`, "max-w-md");
+}
+
+// "De onde vêm" as Ações sugeridas: uma linha por fonte (ícone · nome · regra em uma frase · origem do dado · quantas agora)
+function modalFontes() {
+  const agora = sugestoes(), n = (k) => agora.filter((s) => s.k === k).reduce((a, s) => a + (s.lista ? s.lista.length : 1), 0);
+  const linhas = FONTES_SUG.map(([k, nome, regra, origem]) => { const m = SUG[k], off = k === "atraso" && !S.fonteAtraso;
+    return `<li class="flex gap-3 py-3 ${off ? "opacity-60" : ""}"><span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-50 ${m.cor} dark:bg-white/5">${ic(m.ic, "h-4 w-4")}</span>
+      <div class="min-w-0 flex-1"><p class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-medium text-gray-800 dark:text-white">${nome}<span class="text-xs font-normal text-gray-400">${off ? "desligada pelo supervisor" : `${n(k)} na lista agora`}</span></p>
+        <p class="mt-0.5 text-sm text-gray-600 dark:text-gray-300">${regra}${k === "atraso" ? ` <span class="text-gray-400">O supervisor pode desligar.</span>` : ""}</p>
+        <p class="mt-1">${pill(`${ic("grafico", "h-3 w-3")}${origem}`, COR.cinza)}</p></div></li>`; }).join("");
+  const regras = ["Quem já tem contato agendado não aparece em nenhuma.", "“Não falar” esconde o cliente por 30 dias.", "Cada escolha (Hoje, Amanhã, data) vira um item da agenda e a linha some."];
+  return casca("De onde vêm as Ações sugeridas", "Uma regra por fonte, sempre com dado que já existe", `<ul class="-my-3 divide-y divide-gray-100 dark:divide-gray-800">${linhas}</ul>
+    <div class="mt-4 rounded-xl bg-gray-50 p-3 dark:bg-white/[0.03]"><p class="mb-1 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Regras gerais</p><ul class="list-disc space-y-0.5 pl-4 text-sm text-gray-700 dark:text-gray-200">${regras.map((r) => `<li>${r}</li>`).join("")}</ul></div>`,
+    `<button type="button" data-acao="fechar" class="${UI.btn}">Entendi</button>`, "max-w-2xl");
 }

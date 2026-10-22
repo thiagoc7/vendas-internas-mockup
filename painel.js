@@ -1,4 +1,4 @@
-// ── Vendas = UMA página com abas Resumo · Agenda · Funil · Leads (+ Equipe pro supervisor) — SPEC_V4 §2–§4, §9 ────
+// ── Vendas = UMA página com abas Resumo · Agenda · Leads · Clientes (+ Equipe pro supervisor) — SPEC_V4 §2–§4, §9 ────
 const cardTopo = (titulo, extra = "") => `<div class="flex flex-wrap items-center justify-between gap-2 border-b border-gray-100 px-4 py-3 dark:border-gray-800"><h2 class="${UI.h2}">${titulo}</h2>${extra}</div>`;
 const corNum = (n, tom) => ({ erro: "text-error-600 dark:text-error-400", aviso: "text-warning-600 dark:text-warning-400", brand: "text-brand-600 dark:text-brand-400", ok: "text-success-600 dark:text-success-400", neutro: "text-gray-800 dark:text-white" }[n ? tom : "neutro"]);
 const linkMod = (txt) => `<span class="mt-2 inline-flex items-center gap-0.5 text-xs font-medium text-brand-500 dark:text-brand-400">${txt}${ic("dir", "h-3 w-3")}</span>`;
@@ -61,7 +61,7 @@ function blocoMeuDia() {
   const de = (s) => it.filter((i) => i.s === s);
   const novos = f ? [] : meus(S.contas).filter((c) => situacao(c) === "novo" && !c.prox);
   const linhaNovos = novos.length && !sup() ? `<li class="flex flex-wrap items-center gap-x-3 gap-y-1 px-2.5 py-1.5 text-xs text-gray-500 dark:text-gray-400"><span class="w-[4.5rem] shrink-0">·</span><span class="min-w-0 flex-1">${novos.length} ainda sem 1º contato (não cobram "sem próximo": estão em Leads e nas Ações sugeridas)</span>
-    <a href="#/vendas/leads?f=sem" class="${UI.link} text-xs">Ver em Leads ›</a></li>` : "";
+    <a href="#/vendas/leads?vista=caixa" class="${UI.link} text-xs">Ver em Leads ›</a></li>` : "";
   const linhaFeito = (x) => { const c = conta(x.id); return `<li class="flex items-center gap-3 rounded-lg border border-gray-100 bg-gray-50 px-2.5 py-1.5 opacity-60 dark:border-gray-800 dark:bg-white/[0.02]">
     <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-success-500 bg-success-500 text-white">${ic("check", "h-3 w-3")}</span>
     <p class="min-w-0 flex-1 truncate text-sm text-gray-500 line-through dark:text-gray-500"><span class="font-mono text-xs">${x.h}</span> ${esc(c.nome)} · ${x.txt}</p></li>`; };
@@ -116,6 +116,18 @@ const SUG = {
   esperando: { g: "atendimento", ic: "chat", cor: "text-sky-500 dark:text-sky-300", rot: "esperando resposta", assunto: "cobrar resposta" },
   atraso: { g: "atendimento", ic: "dinheiro", cor: "text-error-500 dark:text-error-400", rot: "em atraso", assunto: "título vencido" },
 };
+// de onde vem cada sugestão (modal "de onde vêm ⓘ" e tooltip do ícone): [chave, nome, regra em uma frase, origem do dado]
+const FONTES_SUG = [
+  ["hora", "Hora de chamar", "Intervalo médio entre compras × dias desde a última (a mesma conta do card “prontos pra pedir” da dash do PWA); só cliente com ciclo regular, 3+ compras no ano.", "BI · vendas da carteira dela"],
+  ["proposta", "Proposta sem resposta", "Proposta feita por ela, enviada há 3+ dias e sem desfecho.", "Propostas do app"],
+  ["atraso", "Em atraso", "Título vencido na carteira dela.", "Cobrança do BI"],
+  ["esperando", "Esperando resposta", "Conversa aberta na caixa dela em que a última mensagem é dela há 1 dia útil (WhatsApp) ou 2 (e-mail).", "Central V3"],
+  ["parado", "Funil parado", "Lead ou negócio aberto sem próximo contato e sem conversa aberta.", "Negócios (novo)"],
+  ["caixa", "Leads sem 1º contato", "Leads na caixa de entrada, uma linha por campanha.", "Leads (novo)"],
+  ["previsao", "Previsão chegou", "Qualificado “quando precisar” cujo mês de necessidade chegou.", "Negócios (novo)"],
+  ["novos", "Campanha sem 1º contato", "Cliente da carteira posto numa campanha (ex.: Reativação) que ainda não recebeu contato.", "Campanhas (novo)"],
+];
+const fonteSug = (k) => FONTES_SUG.find(([x]) => x === k);
 const GRUPOS_SUG = [["", "Todas"], ["negocio", "Negócio"], ["prospeccao", "Prospecção"], ["atendimento", "Atendimento"]];
 const livreSug = (c) => !c.prox && !(c.naoFalarAte && c.naoFalarAte > HOJE);
 function sugestoes() {
@@ -140,11 +152,11 @@ const contaSug = (l) => Object.fromEntries(GRUPOS_SUG.map(([g]) => [g, l.filter(
 // Linha = ícone · empresa + chip · porquê em cinza · uma ação primária ([Hoje], ou [Cobrar] quando esperando resposta) + [Amanhã] + ▾ (resto)
 const NAO_FALAR = (id) => [["-", "", "Não falar por 30 dias"], ["nao-falar", `${id}|já resolvido`, "já resolvido"], ["nao-falar", `${id}|não é alvo`, "não é alvo"], ["nao-falar", `${id}|depois do mês`, "depois do mês"]];
 function linhaSug(s) {
-  const ro = sup(), m = SUG[s.k], b = UI.btnSm, ico = `<span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-50 ${m.cor} dark:bg-white/5">${ic(m.ic, "h-4 w-4")}</span>`;
+  const ro = sup(), m = SUG[s.k], b = UI.btnSm, f = fonteSug(s.k), ico = `<span title="${f[1]} · ${f[3]}" class="flex h-8 w-8 shrink-0 cursor-help items-center justify-center rounded-full bg-gray-50 ${m.cor} dark:bg-white/5">${ic(m.ic, "h-4 w-4")}</span>`;
   const mais = (chave, itens) => drop(chave, `<span class="sr-only">Mais opções</span>`, `${b} px-1.5`, itens);
   if (s.lista) {
-    const caixa = s.k === "caixa", href = caixa ? `#/vendas/leads?f=caixa${s.lista[0].neg.campanha ? "&campanha=" + s.lista[0].neg.campanha : ""}` : "#/vendas/funil?vista=fonte";
-    const botoes = ro ? "" : `<button type="button" data-acao="lote-leads" data-v="${s.grupo}|pordia" class="${b}">5 por dia</button>${mais(`lote:${s.grupo}`, [["lote-leads", `${s.grupo}|hoje`, "5 hoje", "entram no topo da agenda de hoje"], ["ir", href, caixa ? "Abrir a caixa de entrada" : "Ver no funil"]])}`;
+    const caixa = s.k === "caixa", href = caixa ? `#/vendas/leads?vista=caixa${s.lista[0].neg.campanha ? "&campanha=" + s.lista[0].neg.campanha : ""}` : "#/vendas/clientes?vista=negociacao";
+    const botoes = ro ? "" : `<button type="button" data-acao="lote-leads" data-v="${s.grupo}|pordia" class="${b}">5 por dia</button>${mais(`lote:${s.grupo}`, [["lote-leads", `${s.grupo}|hoje`, "5 hoje", "entram no topo da agenda de hoje"], ["ir", href, caixa ? "Abrir a caixa de entrada" : "Ver em Clientes"]])}`;
     return `<li class="flex flex-wrap items-center gap-x-3 gap-y-1.5 px-4 py-2.5">${ico}<a href="${href}" class="min-w-0 flex-1"><p class="truncate text-sm font-medium text-gray-800 hover:text-brand-500 dark:text-white">${caixa ? `${s.lista.length} leads na caixa de entrada` : `${s.lista.length} sem 1º contato`}</p><p class="truncate text-xs text-gray-500 dark:text-gray-400">${s.porque}</p></a>
       ${botoes ? `<div class="flex w-full shrink-0 items-center justify-end gap-1.5 sm:w-auto">${botoes}</div>` : ""}</li>`;
   }
@@ -158,7 +170,7 @@ function linhaSug(s) {
 function blocoSugestoes(naGaveta = false) {
   const todas = sugestoes(), n = contaSug(todas), l = todas.filter((s) => !S.sugFiltro || SUG[s.k].g === S.sugFiltro), lim = naGaveta ? 99 : 6;
   const chips = `<div class="flex flex-wrap gap-1.5">${GRUPOS_SUG.map(([g, r]) => chipF(S.sugFiltro === g, "sug-filtro", g, r, n[g])).join("")}</div>`;
-  return `<section class="${UI.card} overflow-hidden">${cardTopo(`Ações sugeridas <span class="${UI.badge}">${n[""]}</span>`)}
+  return `<section class="${UI.card} overflow-hidden">${cardTopo(`Ações sugeridas <span class="${UI.badge}">${n[""]}</span>`, `<button type="button" data-acao="fontes-sug" class="inline-flex items-center gap-1 text-xs font-medium text-gray-500 hover:text-brand-600 dark:text-gray-400 dark:hover:text-brand-400">de onde vêm${ic("info", "h-4 w-4")}</button>`)}
     <div class="border-b border-gray-100 px-4 py-2.5 dark:border-gray-800">${chips}</div>
     ${l.length ? `<ul class="divide-y divide-gray-100 dark:divide-gray-800">${corta("sug", l, lim).map(linhaSug).join("")}</ul>${naGaveta ? "" : verTodos("sug", l.length, lim)}` : vazio("Nada sugerido — tudo que precisa de contato já está na agenda.")}</section>`;
 }
@@ -253,7 +265,7 @@ function blocoTarefas() {
     <div class="grid grid-cols-3 gap-2 p-3 sm:gap-3 sm:p-4">${tile("atrasado", n.atr, "atrasados", "text-error-600 dark:text-error-400")}${tile("hoje", n.hoje, "hoje", "text-gray-800 dark:text-white")}${tile("sem", n.sem, "sem próximo", "text-warning-600 dark:text-warning-400")}</div>
     <div class="flex flex-wrap items-center gap-2 border-t border-gray-100 px-4 py-2.5 dark:border-gray-800">${canal("telefone", ic("fone", "h-3.5 w-3.5"), (k) => k === 1 ? "ligação" : "ligações")}${canal("whatsapp", icWa("h-3.5 w-3.5"), () => "WhatsApp")}${canal("email", ic("mail", "h-3.5 w-3.5"), () => "e-mail")}
       <span class="flex flex-wrap gap-x-3 gap-y-1 sm:ml-auto">${msgs ? `<a href="#/conversas" class="inline-flex items-center gap-1 text-xs font-medium text-brand-600 hover:underline dark:text-brand-400">${ic("chat", "h-3.5 w-3.5")}${msgs} ${msgs === 1 ? "mensagem nova" : "mensagens novas"} na Central ›</a>` : ""}
-      ${caixa ? `<a href="#/vendas/leads?f=caixa" class="inline-flex items-center gap-1 text-xs font-medium text-purple-700 hover:underline dark:text-purple-300">${ic("users", "h-3.5 w-3.5")}${caixa} leads na caixa de entrada ›</a>` : ""}</span></div></section>`;
+      ${caixa ? `<a href="#/vendas/leads?vista=caixa" class="inline-flex items-center gap-1 text-xs font-medium text-purple-700 hover:underline dark:text-purple-300">${ic("users", "h-3.5 w-3.5")}${caixa} leads na caixa de entrada ›</a>` : ""}</span></div></section>`;
 }
 
 // ── Números do PWA (cada card linka pra página BI dela, recortada pela carteira) ──
@@ -270,7 +282,7 @@ function blocosPWA() {
   const cs = meus(S.contas), cli = cs.filter((c) => c.tipo === "cliente");
   const venc = cli.filter((c) => c.bi.vencidos > 0), vencR = venc.reduce((a, c) => a + c.bi.vencidos, 0);
   const pw = ids.map((id) => PWA_EXTRA[id]), posit = Math.round(pw.reduce((a, x) => a + x.posit, 0) / pw.length), positDe = pw.reduce((a, x) => [a[0] + x.positDe[0], a[1] + x.positDe[1]], [0, 0]);
-  const psr = cs.filter(propostaSemResposta).length;
+  const psr = cs.filter(propostaSemResposta).length, prontos = cli.filter((c) => recompra(c) === "pronto").length, esfriando = cli.filter((c) => recompra(c) === "esfriando").length;
   const leadsMes = cs.filter((c) => c.tipo === "prospect" && ([...c.eventos].reverse()[0]?.d || "") >= "2026-10-01"), naCx = leadsMes.filter(naCaixa).length;
   const abertos = cli.filter((c) => (c.bi.primeira || "").startsWith("2026-10")), tanques = TANQUES_MES.filter((t) => ids.includes(conta(t.conta).dona));
   const lista = (titulo, itens, vazioTxt) => `<div class="${UI.card} overflow-hidden">${cardTopo(`${titulo}${itens.length ? ` <span class="${UI.badge}">${itens.length}</span>` : ""}`)}${itens.length ? `<ul class="divide-y divide-gray-100 dark:divide-gray-800">${itens.join("")}</ul>` : vazio(vazioTxt)}</div>`;
@@ -281,11 +293,12 @@ function blocosPWA() {
       <div class="relative h-2.5 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800"><div class="h-full rounded-full ${barra}" style="width:${Math.min(pct, 100)}%"></div><span class="absolute inset-y-0 w-px bg-gray-400" style="left:${Math.round((15 / 22) * 100)}%"></span></div>
       <div class="mt-2 flex flex-wrap items-baseline gap-x-2"><span class="text-lg font-bold text-gray-800 dark:text-white">${litros(m.real)}</span><span class="text-sm text-gray-500 dark:text-gray-400">/ ${litros(m.meta)}</span><span class="ml-auto text-sm font-semibold ${pct >= 70 ? "text-warning-500" : "text-gray-500 dark:text-gray-400"}">${pct}%</span></div>
       <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">S10 ${litros(m.s10)} · S500 ${litros(m.s500)} · faltam ${litros(falta)} em ${dias} dias úteis · no ritmo fecha em ~${litros(ritmo)}</p></button>
-    <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+    <div class="grid grid-cols-2 gap-3 lg:grid-cols-5">
       ${statLink("pwa", "cobranca", "Em atraso", `${venc.length} <span class="text-sm font-normal">clientes</span>`, reaisK(vencR), "Cobrança", corNum(venc.length, "erro"))}
       ${statLink("pwa", "comodato", "Positivação comodato", `${posit}%`, `${positDe[0]} de ${positDe[1]}`, "Comodato", posit >= 80 ? corNum(1, "ok") : posit >= 50 ? corNum(1, "aviso") : corNum(0))}
       ${statLink("pwa", "propostas", "Propostas sem resposta", psr, "aguardando há 3+ dias", "Propostas", corNum(psr, "aviso"))}
-      ${statLink("ir", "#/vendas/leads", "Leads novos no mês", leadsMes.length, `${naCx} na caixa de entrada`, "Leads", corNum(leadsMes.length, "brand"))}</div>
+      ${statLink("ir", "#/vendas/leads", "Leads novos no mês", leadsMes.length, `${naCx} na caixa de entrada`, "Leads", corNum(leadsMes.length, "brand"))}
+      <div class="col-span-2 grid lg:col-span-1">${statLink("ir", "#/vendas/clientes?vista=hora", "Prontos pra pedir", prontos, `${esfriando} esfriando`, "Hora de chamar", corNum(prontos, "brand"))}</div></div>
     <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
       ${lista("Clientes abertos no mês", abertos.map((c) => li(c, `${litros(c.bi.consumo)}/mês · desde ${dm(c.bi.primeira)}`)), "Nenhum cliente novo este mês.")}
       ${lista("Tanques instalados no mês", tanques.map((t) => li(conta(t.conta), `${t.m3} m³ · ${esc(t.local)} · ${dm(t.d)}`)), "Nenhum tanque instalado este mês.")}</div></section>`;
@@ -303,12 +316,12 @@ function blocoBusca() {
 }
 
 // ── Casca da página Vendas: saudação + busca, abas, seletor do supervisor ──
-const ABAS_VENDAS = [["resumo", "Resumo", "vendas"], ["agenda", "Agenda", "vendas/agenda"], ["funil", "Funil", "vendas/funil"], ["leads", "Leads", "vendas/leads"]];
+const ABAS_VENDAS = [["resumo", "Resumo", "vendas"], ["agenda", "Agenda", "vendas/agenda"], ["leads", "Leads", "vendas/leads"], ["clientes", "Clientes", "vendas/clientes"]];
 function telaVendas() {
   const nome = sup() ? SUPERVISOR.curto : vend(S.como).curto, abas = [...ABAS_VENDAS, ...(sup() ? [["equipe", "Equipe", "equipe"]] : [])];
   const ativa = S.vAba === "importar" ? "leads" : S.vAba;
   const tab = ([k, r, rota]) => `<a href="#/${rota}" class="shrink-0 border-b-2 px-1 py-3 text-sm font-medium transition-colors ${ativa === k ? "border-brand-500 text-brand-600 dark:text-brand-400" : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"}">${r}</a>`;
-  const corpo = { resumo: telaResumo, agenda: telaAgenda, funil: telaFunil, leads: telaLeads, importar: telaImportar, equipe: telaEquipe }[S.vAba]();
+  const corpo = { resumo: telaResumo, agenda: telaAgenda, leads: telaLeads, clientes: telaClientes, importar: telaImportar, equipe: telaEquipe }[S.vAba]();
   return `<div class="mx-auto max-w-[80rem]">
     <div class="flex flex-wrap items-end justify-between gap-3"><div><h1 class="text-xl font-bold text-gray-800 dark:text-white">Olá, ${nome}</h1><p class="text-sm text-gray-500 dark:text-gray-400">${sup() ? "Supervisor · vendas internas" : "rep 0412 · vendas internas"} · qua 21/10</p></div><div class="w-full sm:w-80">${blocoBusca()}</div></div>
     <div class="mb-4 mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-gray-200 dark:border-gray-800"><nav class="no-scrollbar -mb-px flex gap-5 overflow-x-auto">${abas.map(tab).join("")}</nav>${sup() ? `<div class="pb-2">${seletorVendedora()}</div>` : ""}</div>
@@ -363,5 +376,5 @@ function blocoVisitas() {
 }
 const telaEquipe = () => !sup() ? `<div class="${UI.card}">${vazio("Só o supervisor vê a Equipe.")}</div>`
   : `<div class="space-y-4">${blocoEquipeTabela()}${blocoVisitas()}
-    <div class="${UI.card} p-4"><h2 class="${UI.h2}">Fontes das Ações sugeridas</h2><p class="mt-1 ${V.muted}">Proposta sem resposta, funil parado, hora de chamar, caixa de entrada, previsão e esperando resposta ficam sempre ligadas.</p>
+    <div class="${UI.card} p-4"><h2 class="${UI.h2}">Fontes das Ações sugeridas</h2><p class="mt-1 ${V.muted}">As outras fontes ficam sempre ligadas. <button type="button" data-acao="fontes-sug" class="${UI.link}">de onde vêm</button></p>
       <label class="mt-3 flex cursor-pointer items-center gap-2 text-sm text-gray-700 dark:text-gray-200"><input type="checkbox" data-acao="fonte-atraso" ${S.fonteAtraso ? "checked" : ""} class="h-4 w-4 rounded border-gray-300">Em atraso (título vencido) aparece como sugestão de Atendimento</label></div></div>`;

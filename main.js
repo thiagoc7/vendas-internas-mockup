@@ -5,7 +5,7 @@ function reiniciar() {
     agAba: "hoje", agFiltro: "", feitos: [{ id: 100 + FEITO_INICIAL, h: "08:30", txt: "ligação · não atendeu · próximo: amanhã 10:00" }], deItem: null,
     convVista: "minhas", convQ: "", buscaQ: "", aba: "atividade", semana: 0, agSel: null, seq: 500, entrouComo: false, rascunho: {}, erpAberto: true,
     sugFiltro: "", sugSel: [], gaveta: false, resDia: HOJE, resSel: null, flash: null, proxFoco: false, proxFechado: false,
-    funVista: "etapa", funFonte: "", funCamp: "", funCel: "", funFech: { novo: true, ganho: true }, caixaSel: null, caixaIdx: 0, editPrev: false, leadChip: "caixa", leadFonte: "", leadCamp: "", leadCid: "", leadSemCls: false,
+    funVista: "etapa", funFonte: "", funCamp: "", funCel: "", funFech: { novo: true }, caixaSel: null, caixaIdx: 0, editPrev: false, leadVista: "caixa", cliVista: "todos", cliQ: "", leadFonte: "", leadCamp: "", leadCid: "", leadSemCls: false,
     imp: null, fonteAtraso: true, checando: null,
     importacoes: [{ id: 1, d: "2026-10-05", h: "", fonte: "lista", camp: "Lista Carapicuíba", origem: "planilha (XLSX)", total: 44, aceitos: 40, ids: [], desfeita: false },
       { id: 2, d: "2026-09-01", h: "", fonte: "whatsapp_numero_novo", camp: "WhatsApp (nº novo)", origem: "API (Central V3)", total: 9, aceitos: 9, ids: [], desfeita: false }] };
@@ -20,7 +20,7 @@ function tela() {
     default: return telaVendas();
   }
 }
-const MODAIS = { reg: modalRegistrar, agenda: modalAgendar, novo: modalNovo, perder: modalPerder, gescor: modalGescor, vincular: modalVincular, pessoa: modalPessoa, negocio: modalNegocio, descartar: modalDescartar };
+const MODAIS = { reg: modalRegistrar, agenda: modalAgendar, novo: modalNovo, perder: modalPerder, gescor: modalGescor, vincular: modalVincular, pessoa: modalPessoa, negocio: modalNegocio, descartar: modalDescartar, fontes: modalFontes };
 function render() {
   const ativo = document.activeElement, idAtivo = ativo?.id, pos = ativo?.selectionStart;
   const modalScroll = document.querySelector("#modal-raiz .overflow-y-auto")?.scrollTop, gavScroll = document.querySelector("[aria-label='Montar agenda'] .overflow-y-auto")?.scrollTop;
@@ -45,16 +45,19 @@ function rotear() {
   if (!h[0]) return troca("#/vendas");
   if (h[0] === "painel") return troca(q.get("aba") === "semana" ? "#/vendas/agenda?aba=semana" : "#/vendas");
   if (h[0] === "agenda") return troca("#/vendas/agenda" + (qs ? "?" + qs : ""));
-  if (h[0] === "clientes" && !h[1]) { const v = q.get("vista"); return troca(v === "hora" ? "#/vendas/funil?vista=hora" : v === "prospect" ? "#/vendas/leads?f=funil" : q.get("porcampanha") ? "#/vendas/funil?vista=fonte" : q.get("etapa") === "sem" ? "#/vendas/leads?f=caixa" : "#/vendas/funil"); }
+  if (h[0] === "clientes" && !h[1]) { const v = q.get("vista"); return troca(v === "hora" ? "#/vendas/clientes?vista=hora" : v === "prospect" ? "#/vendas/leads?vista=funil" : q.get("porcampanha") ? "#/vendas/leads?vista=funil&por=fonte" : q.get("etapa") === "sem" ? "#/vendas/leads?vista=caixa" : "#/vendas/clientes"); }
+  // v4.1: a aba Funil virou a vista Funil de Leads; Hora de chamar foi pra Clientes
+  if (h[0] === "vendas" && h[1] === "funil") { const v = q.get("vista"); return troca(v === "hora" ? "#/vendas/clientes?vista=hora" : v === "arquivo" ? "#/vendas/leads?vista=arquivo" : v === "fonte" ? "#/vendas/leads?vista=funil&por=fonte" : "#/vendas/leads?vista=funil"); }
+  if (h[0] === "vendas" && h[1] === "leads" && !h[2] && q.get("f")) { const f = q.get("f"), mapa = { sem: "caixa", caixa: "caixa", funil: "funil", ganhos: "ganhos", perdidos: "arquivo" }; q.delete("f"); q.set("vista", mapa[f] || "caixa"); return troca("#/vendas/leads?" + q.toString()); }
   const antes = location.hash.split("?")[0];
   S.id = h[1] && h[0] !== "vendas" ? Number(h[1]) : null;
   S.tela = h[0] === "conversas" && h[1] ? "conversa" : h[0] === "conversas" ? "conversas" : h[0] === "clientes" ? "cliente" : h[0] === "equipe" ? "equipe" : "vendas";
   if (S.tela === "equipe") S.vAba = "equipe";
   if (S.tela === "vendas") {
-    S.vAba = h[1] === "agenda" ? "agenda" : h[1] === "funil" ? "funil" : h[1] === "leads" ? (h[2] === "importar" ? "importar" : "leads") : "resumo";
+    S.vAba = h[1] === "agenda" ? "agenda" : h[1] === "clientes" ? "clientes" : h[1] === "leads" ? (h[2] === "importar" ? "importar" : "leads") : "resumo";
     if (S.vAba === "agenda") { S.agAba = q.get("aba") === "semana" ? "semana" : "hoje"; S.agFiltro = q.get("f") || ""; }
-    if (S.vAba === "funil") { S.funVista = q.get("vista") || "etapa"; S.funCel = ""; }
-    if (S.vAba === "leads" && qs) { S.leadChip = q.get("f") === "sem" ? "caixa" : q.get("f") || "caixa"; S.leadCamp = q.get("campanha") || ""; S.leadFonte = q.get("fonte") || ""; S.exp.leads = false; }
+    if (S.vAba === "leads") { S.leadVista = q.get("vista") || "caixa"; S.funVista = q.get("por") === "fonte" ? "fonte" : "etapa"; S.funCel = ""; S.exp.arq = false; if (qs) { S.leadCamp = q.get("campanha") || ""; S.leadFonte = q.get("fonte") || ""; } }
+    if (S.vAba === "clientes") { S.cliVista = q.get("vista") || "todos"; S.exp.cli = false; }
   }
   if (antes !== S.ultimaRota && Date.now() - (toast.em || 0) > 150) document.getElementById("toast").classList.add("hidden"); // toast de outro fluxo não vaza pra rota nova
   if (antes !== S.ultimaRota) { S.caixaSel = null; S.caixaIdx = 0; S.editPrev = false; S.agSel = null; S.resSel = null; S.proxFoco = false; S.gaveta = false; if (!S.manterFlash) S.flash = null; if (S.tela === "cliente") S.aba = "atividade"; }
@@ -149,10 +152,13 @@ document.addEventListener("click", (e) => {
     case "tl-sel": S.resSel = S.resSel === Number(v) ? null : Number(v); S.flash = null; return render();
     case "levar-atrasados": { const l = meus(S.contas).filter((c) => c.prox && c.prox.d < HOJE); tick(); l.forEach((c) => { const antes = rotProx(c.prox); c.prox = { ...c.prox, d: AMANHA() }; c.eventos.unshift({ d: HOJE, h: agora(), sistema: `Levado pra amanhã (era ${antes})` }); });
       render(); return toast(`${l.length} atrasados levados pra ${rotData(AMANHA())} · dia fechado`); }
-    case "fun-vista": S.funVista = v; S.funCel = ""; history.replaceState(null, "", v === "etapa" ? "#/vendas/funil" : `#/vendas/funil?vista=${v}`); S.ultimaRota = "#/vendas/funil"; return render();
+    case "fun-vista": S.funVista = v; S.funCel = ""; history.replaceState(null, "", v === "fonte" ? "#/vendas/leads?vista=funil&por=fonte" : "#/vendas/leads?vista=funil"); S.ultimaRota = "#/vendas/leads"; return render();
+    case "fun-foco": S.funVista = "etapa"; S.funCel = ""; S.funFech = Object.fromEntries(ETAPAS_FUNIL.map(([k]) => [k, k !== v])); render(); return document.getElementById("sec-" + v)?.scrollIntoView({ block: "start" });
+    case "lead-vista": S.leadVista = v; S.funCel = ""; S.exp.arq = false; S.caixaSel = null; S.caixaIdx = 0; history.replaceState(null, "", v === "caixa" ? "#/vendas/leads" : `#/vendas/leads?vista=${v}`); S.ultimaRota = "#/vendas/leads"; return render();
+    case "cli-vista": S.cliVista = v; S.exp.cli = false; history.replaceState(null, "", v === "todos" ? "#/vendas/clientes" : `#/vendas/clientes?vista=${v}`); S.ultimaRota = "#/vendas/clientes"; return render();
+    case "fontes-sug": return abrirModal({ tipo: "fontes" });
     case "fun-cel": S.funCel = v; return render();
     case "fun-fech": S.funFech[v] = !S.funFech[v]; return render();
-    case "lead-chip": S.leadChip = v; S.exp.leads = false; S.caixaSel = null; S.caixaIdx = 0; return render();
     case "caixa-sel": S.caixaSel = Number(v); S.drop = null; render(); if (innerWidth < 1024) window.scrollTo(0, 0); return;
     case "caixa-nav": return navCaixa(Number(v));
     case "caixa-voltar": S.caixaSel = null; return render();
@@ -163,7 +169,7 @@ document.addEventListener("click", (e) => {
     case "caixa-agendar": { const c = conta(v), p = pessoaPrincipal(c); return abrirModal({ tipo: "agenda", id: c.id, prox: proxVazio("1º contato"), canal: p?.tel && /\(\d\d\) 9/.test(p.tel) ? "whatsapp" : "telefone" }); }
     case "descartar": return abrirModal({ tipo: "descartar", id: Number(v), motivo: "" });
     case "salvar-descartar": { if (!m.motivo) { m.erro = true; return render(); } const c = conta(m.id); tick(); c.neg.motivo = m.motivo; c.neg.descartado = true; c.prox = null; moverEtapa(c, "perdido", "ela", `descartado da caixa · ${m.motivo}`);
-      S.modal = null; render(); return toast(`${esc(c.nome)} descartado · foi pro Arquivo (Funil › Arquivo)`); }
+      S.modal = null; render(); return toast(`${esc(c.nome)} descartado · foi pro Arquivo (Leads › Arquivo)`); }
     case "path": { const [id, et] = v.split("|"); return abrirRegistrar(Number(id), null, false, false, ETAPA_RES[et]); }
     case "fonte-atraso": S.fonteAtraso = !S.fonteAtraso; render(); return toast(`Em atraso ${S.fonteAtraso ? "ligado" : "desligado"} nas Ações sugeridas da equipe`);
     case "proposta-app": { const c = conta(v); tick(); c.eventos.unshift({ d: HOJE, h: agora(), sistema: "Proposta #1441 gerada pelo app (PDF comercial)" });
@@ -173,7 +179,7 @@ document.addEventListener("click", (e) => {
       tick(); c.eventos.unshift({ d: HOJE, h: agora(), sistema: "Pedido #1290 anotado no app (5.000 L)" }); const mv = aberto(c) && moverEtapa(c, "ganho", "pedido", "pedido #1290 anotado"); c.prox = null;
       render(); return toast(mv ? `Pedido anotado · etapa → Ganho (movido pelo pedido)${c.tipo === "prospect" ? " · Aguardando GESCOR" : ""}` : "Pedido anotado."); }
     case "ja-cadastrei": { const c = conta(v); S.checando = c.id; c.gescorSolicitado = HOJE; render();
-      return setTimeout(() => { S.checando = null; converterGescor(c); render(); toast(`${esc(c.nome)} achado no BI (rep 0412) · chip Cliente aceso · o negócio veio junto`); }, 1300); }
+      return setTimeout(() => { S.checando = null; converterGescor(c); render(); toast(`${esc(c.nome)} achado no BI (rep 0412) · virou Cliente com o negócio · saiu de Leads e está em Clientes`); }, 1300); }
     case "ligar": return abrirRegistrar(Number(v), null, false, true);
     case "wa-central": return waCentral(conta(v));
     case "wa-web": return waWeb(conta(v));
@@ -259,6 +265,7 @@ document.addEventListener("change", (e) => {
 document.addEventListener("input", (e) => {
   const t = e.target, m = S.modal, k = t.dataset.input;
   if (k === "busca") { S.buscaQ = t.value; return render(); }
+  if (k === "cli-q") { S.cliQ = t.value; S.exp.cli = false; return render(); }
   if (k === "convq") { S.convQ = t.value; return render(); }
   if (k === "fun-fonte") { S.funFonte = t.value; S.funCel = ""; return render(); }
   if (k === "fun-camp") { S.funCamp = t.value; S.funCel = ""; return render(); }
@@ -282,7 +289,7 @@ document.addEventListener("input", (e) => {
 function navCaixa(d) { const l = listaCaixa(); if (!l.length) return; const i = Math.max(0, Math.min(l.length - 1, S.caixaIdx + d)); S.caixaSel = l[i].id; S.caixaIdx = i; render();
   document.querySelector(`[data-acao=caixa-sel][data-v="${l[i].id}"]`)?.scrollIntoView({ block: "nearest" }); }
 document.addEventListener("keydown", (e) => {
-  if ((e.key === "ArrowDown" || e.key === "ArrowUp") && S.tela === "vendas" && S.vAba === "leads" && S.leadChip === "caixa" && !S.modal && !/INPUT|SELECT|TEXTAREA/.test(e.target.tagName)) { e.preventDefault(); return navCaixa(e.key === "ArrowDown" ? 1 : -1); }
+  if ((e.key === "ArrowDown" || e.key === "ArrowUp") && S.tela === "vendas" && S.vAba === "leads" && S.leadVista === "caixa" && !S.modal && !/INPUT|SELECT|TEXTAREA/.test(e.target.tagName)) { e.preventDefault(); return navCaixa(e.key === "ArrowDown" ? 1 : -1); }
   if (e.key === "Escape" && (S.modal || S.drop || S.gaveta)) { if (S.modal) S.modal = null; else if (S.drop) S.drop = null; else S.gaveta = false; render(); }
   if (e.key === "Enter" && e.target.id === "n-cnpj") consultar();
   if (e.key === "Enter" && !e.shiftKey && e.target.id === "composer") { e.preventDefault(); enviar(S.id); }

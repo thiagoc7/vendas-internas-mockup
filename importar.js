@@ -91,7 +91,7 @@ function passo3(m) {
   const n = m.criados.length, d = m.dist;
   return `<div class="space-y-4"><div class="rounded-xl border border-success-200 bg-success-50 p-4 dark:border-success-500/30 dark:bg-success-500/10"><p class="flex items-center gap-2 text-base font-semibold text-success-800 dark:text-success-300">${ic("check", "h-5 w-5")}${n} leads foram pra caixa de entrada</p>
       <p class="mt-1 text-sm text-success-700 dark:text-success-400">Fonte ${FONTES[m.fonte]} · campanha ${esc(m.camp)}. Lá você classifica (segmento, consumo, vale contato?) e agenda.</p>
-      <a href="#/vendas/leads?f=caixa&campanha=${m.campId}" class="${UI.btnP} mt-3">Abrir caixa de entrada</a></div>
+      <a href="#/vendas/leads?vista=caixa&campanha=${m.campId}" class="${UI.btnP} mt-3">Abrir caixa de entrada</a></div>
     ${sup() ? "" : `<div class="rounded-xl border border-gray-200 p-4 dark:border-gray-800"><p class="text-sm font-semibold text-gray-800 dark:text-white">Agendar 1º contato já?</p><p class="mt-0.5 ${V.muted}">Distribui pela Agenda em dias úteis; quem for agendado sai da caixa e entra no funil como Novo.</p>
       ${d ? `<p class="mt-3 text-sm text-gray-700 dark:text-gray-200">${d}</p><a href="#/vendas/agenda?aba=semana" class="${UI.btnSm} mt-2">Ver na Agenda › Semana</a>`
         : `<div class="mt-3 flex flex-wrap gap-2"><button type="button" data-acao="imp-dist" data-v="pordia" class="${UI.btnP}">5 por dia a partir de amanhã</button><button type="button" data-acao="imp-dist" data-v="hoje" class="${UI.btn}">todos hoje</button><button type="button" data-acao="imp-dist" data-v="depois" class="${UI.btn}">depois</button></div>`}</div>`}

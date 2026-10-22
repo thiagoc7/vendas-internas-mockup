@@ -1,4 +1,4 @@
-// Mockup Vendas Internas v4 (rodada 2026-10-21, noite) — barra Vendas · Conversas; Vendas = Resumo · Agenda · Funil · Leads. Estrutura = ../SPEC_V4.md (manda sobre a SPEC_V3).
+// Mockup Vendas Internas v4 (rodada 2026-10-21, noite) — barra Vendas · Conversas; Vendas = Resumo · Agenda · Leads · Clientes (v4.1). Estrutura = ../SPEC_V4.md (manda sobre a SPEC_V3).
 // Visual: casca/tokens da V3 (app/helpers/whatsapp/v3/atendimento_helper.rb UI) + blocos da dash do CRM PWA (crm/dashboard/_*).
 // Nada é salvo: tudo vive em memória (S); F5 ou "recomeçar" volta ao início.
 
@@ -80,6 +80,7 @@ const IC = {
   ocultar: "M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88",
   cima: "M4.5 15.75l7.5-7.5 7.5 7.5",
   pontos: "M6.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM12.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM18.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0z",
+  info: "M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z",
 };
 const ic = (k, css = "h-5 w-5") => `<svg class="${css} flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="${IC[k]}"/></svg>`;
 const icWa = (css = "h-3.5 w-3.5") => `<svg class="${css} flex-shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884"/></svg>`;
@@ -293,7 +294,7 @@ function atividade(c) {
 function cartaoProximo(c, denso = false) {
   const s = situacao(c), pad = denso ? "p-3" : "p-4";
   if (s === "novo") return `<div class="rounded-xl border border-gray-200 ${pad} dark:border-gray-800"><p class="${UI.secao}">Próximo contato</p><p class="mt-1 text-sm text-gray-700 dark:text-gray-200">Ainda sem 1º contato${c.neg.campanha ? ` · ${esc(campanha(c.neg.campanha).nome)}` : ""}.</p>
-    <p class="mt-1 ${V.muted}">Lead importado: fica em Leads › Sem 1º contato e aparece em Ações sugeridas (Prospecção).</p>${sup() ? "" : `<button type="button" data-acao="agendar" data-v="${c.id}" class="mt-2 ${UI.btnSm}">${ic("cal", "h-3.5 w-3.5")}Agendar 1º contato</button>`}</div>`;
+    <p class="mt-1 ${V.muted}">Lead importado: fica em Leads › Caixa de entrada e aparece em Ações sugeridas (Prospecção).</p>${sup() ? "" : `<button type="button" data-acao="agendar" data-v="${c.id}" class="mt-2 ${UI.btnSm}">${ic("cal", "h-3.5 w-3.5")}Agendar 1º contato</button>`}</div>`;
   if (s === "previsao") return `<div class="rounded-xl border border-purple-200 bg-purple-50/60 ${pad} dark:border-purple-500/30 dark:bg-purple-500/10"><p class="${UI.secao}">Próximo contato</p>
     <p class="mt-1 text-base font-semibold text-gray-800 dark:text-white">quando precisar · ~${mesTxt(c.neg.previsaoNec)}</p><p class="mt-0.5 text-xs text-gray-600 dark:text-gray-300">Qualificado sem data: volta em Ações sugeridas quando a previsão chegar.</p>
     ${sup() ? "" : `<button type="button" data-acao="agendar" data-v="${c.id}" class="mt-2 ${UI.btnSm}">${ic("cal", "h-3.5 w-3.5")}Agendar uma data</button>`}</div>`;

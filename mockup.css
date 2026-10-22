@@ -796,6 +796,9 @@
   .mx-px {
     margin-inline: 1px;
   }
+  .-my-3 {
+    margin-block: calc(var(--spacing) * -3);
+  }
   .my-0\.5 {
     margin-block: calc(var(--spacing) * 0.5);
   }
