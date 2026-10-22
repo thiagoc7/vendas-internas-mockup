@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="disbra">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Vendas Internas v4</title>
+  <link rel="stylesheet" href="mockup.css">
+  <link rel="stylesheet" href="estrutura.css">
+</head>
+<body class="font-outfit bg-gray-50 text-gray-800 dark:bg-gray-950 dark:text-gray-200">
+  <div class="mockbar">
+    <b>MOCKUP v4</b>
+    <label>Ver como
+      <select id="como">
+        <option value="fer">Fernanda (vendedora)</option>
+        <option value="sup">Supervisor</option>
+      </select>
+    </label>
+    <label><input type="checkbox" id="dark"> Escuro</label>
+    <label><input type="checkbox" id="large"> Fonte grande</label>
+    <button id="reiniciar" type="button" style="text-decoration:underline">recomeçar</button>
+    <span class="dica">hoje = qua 21/10/2026 · tudo fictício · nada é salvo</span>
+  </div>
+  <div id="app"></div>
+  <div id="modal-raiz"></div>
+  <div id="toast" role="status" class="pointer-events-none fixed bottom-5 left-1/2 z-[100001] hidden w-max max-w-[90vw] -translate-x-1/2 rounded-lg bg-gray-900 px-5 py-3 text-sm text-white shadow-lg dark:bg-gray-700"></div>
+  <script src="data.js"></script>
+  <script src="base.js"></script>
+  <script src="painel.js"></script>
+  <script src="conversas.js"></script>
+  <script src="agenda_clientes.js"></script>
+  <script src="modais.js"></script>
+  <script src="importar.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>

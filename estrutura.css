@@ -1,0 +1,10 @@
+/* Só o que é do mockup (barra, altura da conversa) e o "Fonte grande". O resto é Tailwind do app. */
+.mockbar{display:flex;gap:14px;align-items:center;flex-wrap:wrap;padding:6px 14px;background:#111827;color:#f9fafb;font:13px system-ui;position:relative;z-index:1000}
+.mockbar b{background:#f59e0b;color:#111;padding:1px 8px;border-radius:4px}
+.mockbar select{color:#111;background:#fff;border-radius:4px;padding:1px 4px}
+.mockbar .dica{opacity:.75}
+html.large{font-size:125%}
+.no-scrollbar{scrollbar-width:none}.no-scrollbar::-webkit-scrollbar{display:none}
+/* Conversa = full-bleed da V3: no desktop ocupa a altura que sobra (barra do mockup + header de 61px). */
+@media (min-width:1024px){.alto-conversa{height:calc(100dvh - var(--barra,0px) - 61px)}}
+details>summary{list-style:none}details>summary::-webkit-details-marker{display:none}
